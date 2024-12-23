@@ -5,32 +5,37 @@
     {
       "id": 11,
       "monster_id": 101,
-      "bossd": 201,
-      "monsterCnt": 20
+      "boss_id": 201,
+      "monster_cnt": 20,
+      "all_kill_score": 100
     },
     {
       "id": 12,
-      "monsterId": 102,
-      "bossId": 202,
-      "monsterCnt": 25
+      "monster_id": 102,
+      "boss_id": 202,
+      "monster_cnt": 25,
+      "all_kill_score": 200
     },
     {
       "id": 13,
-      "monsterId": 103,
-      "bossId": 203,
-      "monsterCnt": 30
+      "monster_id": 103,
+      "boss_id": 203,
+      "monster_cnt": 30,
+      "all_kill_score": 300
     },
     {
       "id": 14,
-      "monsterId": 104,
-      "bossId": 204,
-      "monsterCnt": 35
+      "monster_id": 104,
+      "boss_id": 204,
+      "monster_cnt": 35,
+      "all_kill_score": 400
     },
     {
       "id": 15,
-      "monsterId": 102,
-      "bossId": 205,
-      "monsterCnt": 40
+      "monster_id": 105,
+      "boss_id": 205,
+      "monster_cnt": 40,
+      "all_kill_score": 500
     }
   ]
 }

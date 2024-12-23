@@ -7,35 +7,40 @@
       "health": 10,
       "attack": 1,
       "speed": 10,
-      "gold": 5
+      "gold": 5,
+      "score": 10
     },
     {
       "id": 102,
       "health": 20,
       "attack": 2,
       "speed": 10,
-      "gold": 10
+      "gold": 10,
+      "score": 20
     },
     {
       "id": 103,
       "health": 30,
       "attack": 3,
       "speed": 10,
-      "gold": 15
+      "gold": 15,
+      "score": 30
     },
     {
       "id": 104,
       "health": 40,
       "attack": 4,
       "speed": 10,
-      "gold": 20
+      "gold": 20,
+      "score": 40
     },
     {
       "id": 105,
       "health": 50,
       "attack": 5,
       "speed": 10,
-      "gold": 25
+      "gold": 25,
+      "score": 50
     }
   ]
 }
