@@ -1,0 +1,20 @@
+{
+  "name": "Pawn-Tower",
+  "version": "1.0.0",
+  "data": [
+    {
+      "id": 1001,
+      "color": "red",
+      "attack": 10,
+      "attack_speed": 10,
+      "range": 5
+    },
+    {
+      "id": 1002,
+      "color": "black",
+      "attack": 10,
+      "attack_speed": 10,
+      "range": 5
+    }
+  ]
+}

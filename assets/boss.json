@@ -1,0 +1,41 @@
+{
+  "name": "Boss",
+  "version": "1.0.0",
+  "data": [
+    {
+      "id": 201,
+      "health": 100,
+      "attack": 9999,
+      "speed": 10,
+      "gold": 50
+    },
+    {
+      "id": 202,
+      "health": 200,
+      "attack": 9999,
+      "speed": 10,
+      "gold": 100
+    },
+    {
+      "id": 203,
+      "health": 300,
+      "attack": 9999,
+      "speed": 10,
+      "gold": 150
+    },
+    {
+      "id": 204,
+      "health": 400,
+      "attack": 9999,
+      "speed": 10,
+      "gold": 200
+    },
+    {
+      "id": 205,
+      "health": 500,
+      "attack": 9999,
+      "speed": 10,
+      "gold": 250
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "name": "wave",
+  "version": "1.0.0",
+  "data": [
+    {
+      "id": 11,
+      "monster_id": 101,
+      "bossd": 201,
+      "monsterCnt": 20
+    },
+    {
+      "id": 12,
+      "monsterId": 102,
+      "bossId": 202,
+      "monsterCnt": 25
+    },
+    {
+      "id": 13,
+      "monsterId": 103,
+      "bossId": 203,
+      "monsterCnt": 30
+    },
+    {
+      "id": 14,
+      "monsterId": 104,
+      "bossId": 204,
+      "monsterCnt": 35
+    },
+    {
+      "id": 15,
+      "monsterId": 102,
+      "bossId": 205,
+      "monsterCnt": 40
+    }
+  ]
+}
