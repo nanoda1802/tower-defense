@@ -32,12 +32,14 @@ const readFileAsync = (fileName) => {
 export const loadGameAssets = async () => {
   try {
     // [1] 병렬적으로 파일 열람 후 각각 배열 구조분해할당
-    const [stages, items] = await Promise.all([
-      readFileAsync("stage.json"),
-      readFileAsync("item.json"),
+    const [bosses, monsters, pawnTowers, specialTowers] = await Promise.all([
+      readFileAsync("boss.json"),
+      readFileAsync("monster.json"),
+      readFileAsync("pawn-tower.json"),
+      readFileAsync("special-tower.json"),
     ]);
     // [2] 재료 데이터 저장하는 객체에 불러온 JSON 객체들 저장
-    gameAssets = { stages, items };
+    gameAssets = { bosses, monsters, pawnTowers, specialTowers };
     // [3 a] 객체 통째로 반환
     return gameAssets;
   } catch (err) {
