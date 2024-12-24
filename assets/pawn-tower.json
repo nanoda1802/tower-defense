@@ -7,14 +7,16 @@
       "color": "red",
       "attack": 10,
       "attack_speed": 10,
-      "range": 5
+      "range": 5,
+      "splash": 1
     },
     {
       "id": 1002,
       "color": "black",
       "attack": 10,
       "attack_speed": 10,
-      "range": 5
+      "range": 5,
+      "splash": 1
     }
   ]
 }
