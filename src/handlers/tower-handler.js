@@ -1,23 +1,23 @@
 import { getGameAssets } from '../inits/assets.js';
 import { PAWN_TOWER_COST, SPECIAL_TOWER_COST } from '../constants.js';
-import { getTower, setTower, removeTower } from '../models/tower-model.js';
+import { getTower, setTower, removeTower, upgradeTower, getRemoveTower } from '../models/tower-model.js';
 import { getGold, setGold } from '../models/gold-model.js';
 
-const TOWER_TYPE_PAWN = 'PAWN';
-const TOWER_TYPE_SPECIAL = 'SPECIAL';
+const TOWER_TYPE_PAWN = 'pawn';
+const TOWER_TYPE_SPECIAL = 'special';
 
 export const getTowerHandler = (userId, payload) => {
   try {
     const { pawnTowers, specialTowers } = getGameAssets();
-    const { type, color, positionX, positionY } = payload;
+    const { type, color, positionX, positionY, timestamp } = payload;
 
-    // 2. position(x,y)에 대한 검증
+    // 2. position(x,y) 위치에 towerId가 존재하는지
     const userTowers = getTower(userId);
     if (userTowers.some((tower) => tower.positionX === positionX && tower.positionY === positionY)) {
       return { status: 'fail', message: 'There is already a tower at that location' };
     }
 
-    // 3. 보유 골드 검증
+    // 3. 보유 골드 확인
     const cost = type === TOWER_TYPE_PAWN ? PAWN_TOWER_COST : SPECIAL_TOWER_COST;
     const userGold = getGold(userId);
 
@@ -31,7 +31,7 @@ export const getTowerHandler = (userId, payload) => {
 
     // 5. 골드 처리
     const resGold = userGold[userGold.length - 1].gold - cost;
-    setGold(userId, resGold, -cost, 'PURCHASE');
+    setGold(userId, resGold, -cost, 'PURCHASE', timestamp);
     // console.log(getGold(userId));
 
     /** 6. 타워 생성
@@ -72,10 +72,10 @@ export const getTowerHandler = (userId, payload) => {
       }
     }
 
-    setTower(userId, towerInfo.id, towerInfo.card, towerInfo.color, positionX, positionY);
+    setTower(userId, positionX, positionY, type, timestamp, towerInfo);
     // console.log(getTower(userId));
 
-    return { status: 'success', gold: resGold };
+    return { status: 'success', gold: resGold, tower: getTower(userId) };
   } catch (error) {
     throw new Error('Failed to getTowerHandler !! ' + error.message);
   }
@@ -83,8 +83,46 @@ export const getTowerHandler = (userId, payload) => {
 
 /* 타워 판매 42 */
 export const sellTowerHandler = (userId, payload) => {
-  // [ payload : towerId, position(x,y)]
+  try {
+    const { type, towerId, positionX, positionY, timestamp } = payload;
 
+    // 1. 기준정보 (towerId)
+    const res = checkTowerAsset(type, towerId);
+    if (res) return { status: 'fail', message: res };
+
+    // 2. position(x,y) 위치에 towerId가 존재하는지
+    const userTowers = getTower(userId);
+    const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+    if (!towerInfo) {
+      return { status: 'fail', message: 'There is not a tower' };
+    }
+
+    /** 3. 판매처리 (골드)
+     *  일반 : 뽑기 금액 / 2 * 카드숫자
+     *  특수 : 뽑기 금액 / 2
+     */
+    const userGold = getGold(userId);
+    if (!userGold) {
+      return { status: 'fail', message: 'No gold data for user' };
+    }
+    const price = towerInfo.type === TOWER_TYPE_PAWN ? (PAWN_TOWER_COST / 2) * Number(towerInfo.data.card) : SPECIAL_TOWER_COST / 2;
+
+    setGold(userId, userGold[userGold.length - 1].gold + price, price, 'SELL', timestamp);
+    // console.log(getGold(userId));
+
+    // 4. 판매처리 (타워)
+    removeTower(userId, towerId, positionX, positionY);
+    // console.log(getTower(userId));
+    // console.log(getRemoveTower(userId));
+
+    return { status: 'success', gold: 5 };
+  } catch (error) {
+    throw new Error('Failed to sellTowerHandler !! ' + error.message);
+  }
+};
+
+/* 타워 승급 43 */
+export const upgradeTowerHandler = (userId, payload) => {
   const { type, towerId, positionX, positionY } = payload;
 
   // 1. 기준정보 (towerId)
@@ -93,7 +131,7 @@ export const sellTowerHandler = (userId, payload) => {
 
   // 2. position(x,y) 위치에 towerId가 존재하는지
   const userTowers = getTower(userId);
-  if (!userTowers.some((tower) => tower.id === towerId && tower.positionX === positionX && tower.positionY === positionY)) {
+  if (!userTowers.some((tower) => tower.towerId === towerId && tower.positionX === positionX && tower.positionY === positionY)) {
     return { status: 'fail', message: 'There is not a tower' };
   }
 
@@ -103,17 +141,9 @@ export const sellTowerHandler = (userId, payload) => {
     return { status: 'fail', message: 'No gold data for user' };
   }
 
-  setGold(userId, resGold, cost, 'SELL');
-  // console.log(getGold(userId));
+  // 4. 타워 승급 처리
+  upgradeTower(userId);
 
-  // 4. 타워 판매 처리
-  removeTower(userId, towerId, positionX, positionY);
-  // console.log(getTower(userId));
-
-  return { status: 'success', gold: 5 };
-};
-/* 타워 승급 43 */
-export const upgradeTowerHandler = (userId, payload) => {
   // [ payload : towerId(currentTowerId) , towerId(nextTowerId) , position(x,y)/타워 고유값 ]
   //  1. 기준정보 (towerId) - 현재 등급 타워
   //  2. 기준정보 (towerId) - 다음 등급 타워
