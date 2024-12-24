@@ -78,6 +78,20 @@ function generateRandomMonsterPath() {
   return path;
 }
 
+function generateStraightMonsterPath() {
+  const path = [];
+  const fixedY = Math.trunc((canvas.height / 3) * 2); // y 값을 캔버스 높이의 절반으로 고정
+  const stepX = 100; // x 값 증가 간격
+  let currentX = 0;
+
+  while (currentX <= canvas.width) {
+    path.push({ x: currentX, y: fixedY });
+    currentX += stepX;
+  }
+
+  return path;
+}
+
 function initMap() {
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 이미지 그리기
   drawPath();
@@ -144,7 +158,7 @@ function placeInitialTowers() {
     타워를 초기에 배치하는 함수입니다.
     무언가 빠진 코드가 있는 것 같지 않나요? 
   */
-  numOfInitialTowers = 3; // 초기 타워 개수가 빠져있어요 ^_^
+  numOfInitialTowers = 0; // 초기 타워 개수가 빠져있어요 ^_^
   for (let i = 0; i < numOfInitialTowers; i++) {
     const { x, y } = getRandomPositionNearPath(200);
     const tower = new Tower(x, y, towerCost);
@@ -154,14 +168,17 @@ function placeInitialTowers() {
 }
 
 function placeNewTower() {
-  /* 
-    타워를 구입할 수 있는 자원이 있을 때 타워 구입 후 랜덤 배치하면 됩니다.
-    빠진 코드들을 채워넣어주세요! 
-  */
-  const { x, y } = getRandomPositionNearPath(200);
-  const tower = new Tower(x, y);
-  towers.push(tower);
-  tower.draw(ctx, towerImage);
+  if (pendingTowerPosition) {
+    const { x, y } = pendingTowerPosition;
+    // 타워 생성
+    const tower = new Tower(x, y, towerCost);
+    towers.push(tower);
+    tower.draw(ctx, towerImage);
+    // 생성 후 상태 초기화
+    pendingTowerPosition = null;
+  } else {
+    alert("타워를 배치할 위치를 먼저 선택하세요.");
+  }
 }
 
 function placeBase() {
@@ -230,7 +247,7 @@ function initGame() {
     return;
   }
 
-  monsterPath = generateRandomMonsterPath(); // 몬스터 경로 생성
+  monsterPath = generateStraightMonsterPath(); // 몬스터 경로 생성
   initMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
   placeInitialTowers(); // 설정된 초기 타워 개수만큼 사전에 타워 배치
   placeBase(); // 기지 배치
@@ -311,7 +328,119 @@ buyTowerButton.style.right = "10px";
 buyTowerButton.style.padding = "10px 20px";
 buyTowerButton.style.fontSize = "16px";
 buyTowerButton.style.cursor = "pointer";
+document.body.appendChild(buyTowerButton);
 
 buyTowerButton.addEventListener("click", placeNewTower);
 
-document.body.appendChild(buyTowerButton);
+/* 타워 정보 보여주는 div 생성 */
+const towerInfoPanel = document.createElement("div");
+towerInfoPanel.id = "towerInfoPanel";
+towerInfoPanel.style.position = "absolute";
+towerInfoPanel.style.right = "10px";
+towerInfoPanel.style.top = "60px";
+towerInfoPanel.style.padding = "10px";
+towerInfoPanel.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+towerInfoPanel.style.color = "white";
+towerInfoPanel.style.display = "none"; // 기본적으로 숨김
+document.body.appendChild(towerInfoPanel);
+
+/* 클릭 위치에 타워나 경로가 있는지 확인하는 함수 */
+function isPositionValid(x, y) {
+  const towerRadius = 78; // 타워 이미지 반경
+  const pathRadius = 60; // 경로 이미지 반경
+  // 다른 타워와의 충돌 확인
+  for (const tower of towers) {
+    const distance = Math.sqrt(
+      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
+    );
+    if (distance < towerRadius) {
+      return false; // 다른 타워와 겹침
+    }
+  }
+  // 경로와의 충돌 확인
+  for (const point of monsterPath) {
+    const distance = Math.sqrt(
+      Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2),
+    );
+    if (distance < pathRadius) {
+      return false; // 경로와 겹침
+    }
+  }
+  return true; // 충돌 없음
+}
+/* 타워 정보 창 보여주는 함수*/
+function showTowerInfo(tower) {
+  const towerInfo = document.getElementById("towerInfoPanel");
+  towerInfo.style.display = "block";
+  towerInfo.innerHTML = `
+    <p>타워 위치: (${tower.x}, ${tower.y})</p>
+    <p>타워 공격력: ${tower.attackPower}</p>
+    <p>타워 범위: ${tower.range}</p>
+    <button id="sellTowerButton">판매</button>
+    <button id="upgradeTowerButton">승급</button>
+  `;
+  // 판매 버튼 누르면 판매
+  document.getElementById("sellTowerButton").addEventListener("click", () => {
+    sellTower(tower);
+    towerInfo.style.display = "none";
+  });
+  // 승급 버튼 누르면 승급
+  document
+    .getElementById("upgradeTowerButton")
+    .addEventListener("click", () => {
+      upgradeTower(tower);
+    });
+}
+/* 타워 정보 창 숨김 함수 */
+function hideTowerInfo() {
+  towerInfoPanel.style.display = "none";
+}
+/* 타워 판매 함수 */
+function sellTower(tower) {
+  const index = towers.indexOf(tower);
+  if (index > -1) {
+    userGold += towerCost / 2; // 판매 시 비용의 절반 반환
+    towers.splice(index, 1); // 타워 목록에서 제거
+    hideTowerInfo(); // 정보 패널 숨김
+    console.log("타워 판매됨:", tower);
+  }
+}
+/* 타워 승급 함수 */
+function upgradeTower(tower) {
+  if (userGold >= towerCost) {
+    userGold -= towerCost; // 승급 비용 차감
+    tower.attackPower += 10; // 공격력 증가
+    tower.range += 20; // 범위 증가
+    console.log("타워 승급됨:", tower);
+    displayTowerInfo(tower); // 승급 후 갱신된 정보 표시
+  } else {
+    alert("골드가 부족합니다!");
+  }
+}
+
+/* 원하는 위치에 타워 생성 */
+let selectedTower = null; // 현재 선택된 타워
+let pendingTowerPosition = null; // 생성 대기 중인 타워 위치
+canvas.addEventListener("click", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  // 타워 클릭 여부 확인
+  for (const tower of towers) {
+    const distance = Math.sqrt(
+      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
+    );
+    if (distance < 30) {
+      // 타워 반경 내 클릭
+      selectedTower = tower; // 타워 선택
+      showTowerInfo(tower); // 선택된 타워 정보 표시
+      return;
+    }
+  }
+  // 타워가 없는 빈 공간을 클릭했을 때
+  if (isPositionValid(x, y)) {
+    hideTowerInfo(); // 타워 이외의 캔버스 클릭 시 선택 해제
+    pendingTowerPosition = { x, y }; // 생성 대기 중인 타워 위치 설정
+    selectedTower = null; // 선택 초기화
+  }
+});
