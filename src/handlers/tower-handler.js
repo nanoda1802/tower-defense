@@ -1,10 +1,8 @@
 import { getGameAssets } from '../inits/assets.js';
-import { PAWN_TOWER_COST, SPECIAL_TOWER_COST } from '../constants.js';
+import { PAWN_TOWER_COST, SPECIAL_TOWER_COST, TOWER_TYPE_PAWN, TOWER_TYPE_SPECIAL, MONSTER_TYPE, BOSS_TYPE } from '../constants.js';
 import { getTower, setTower, removeTower, upgradeTower, getRemoveTower } from '../models/tower-model.js';
 import { getGold, setGold } from '../models/gold-model.js';
-
-const TOWER_TYPE_PAWN = 'pawn';
-const TOWER_TYPE_SPECIAL = 'special';
+// import { getMoster } from '../models/monster-model.js';
 
 export const getTowerHandler = (userId, payload) => {
   try {
@@ -185,17 +183,83 @@ export const upgradeTowerHandler = (userId, payload) => {
 
 /* 타워 공격 44 */
 export const attackHandler = (userId, payload) => {
-  // [ payload : towerId , monsterId, towerPosition(x,y)/타워 고유값 , monsterPosition(x,y)/몬스터 고유값 ]
-  //  1. 기준정보 (towerId)
-  //  2. 기준정보 (monsterId)
-  //  3. 설치한 타워가 맞는지 검증 (위치 포함)
-  //  4. 생존한 몬스터가 맞는지 검증 (위치 포함)
-  //  5. 공격 사거리 검증
-  //  6-1. 몬스터 체력 변경
-  //  6-2. (조건). 몬스터 체력 0 이면 몬스터 처치 및 보유 골드 변경 처리
-  //  7. return { monsterHp : 1 , gold : 0} / return { monsterHp : 0 , gold : 5} <- gold는 보유 총량을반환해도 되고 증감치를 반환해도 됨. (선택)
+  const { pawnTowers, specialTowers, monsters, bosses } = getGameAssets();
+  const { towerType, towerId, towerPositionX, towerPositionY, monsterType, monsterId, monsterPositionX, monsterPositionY } = payload;
+
+  /** 1. 기준정보 체크
+   *  타워, 몬스터
+   */
+  // 타워
+  const towerRes = checkTowerAsset(towerType, towerId);
+  if (towerRes) return { status: 'fail', message: towerRes };
+  // if (towerType === TOWER_TYPE_PAWN) {
+  //   if (!checkAsset(towerId, pawnTowers)) {
+  //     return { status: 'fail', message: 'No pawn found for asset' };
+  //   }
+  // } else if (towerType === TOWER_TYPE_SPECIAL) {
+  //   if (!checkAsset(towerId, specialTowers)) {
+  //     return { status: 'fail', message: 'No special found for asset' };
+  //   }
+  // } else {
+  //   return { status: 'fail', message: 'Invalid tower type' };
+  // }
+
+  // 몬스터
+  const mosterRes = checkMosterAsset(monsterType, monsterId);
+  if (mosterRes) return { status: 'fail', message: mosterRes };
+  // if (monsterType === MONSTER_TYPE) {
+  //   if (!checkAsset(monsterId, pawnTowers)) {
+  //     return { status: 'fail', message: 'No monster found for asset' };
+  //   }
+  // } else if (monsterType === BOSS_TYPE) {
+  //   if (!checkAsset(monsterId, specialTowers)) {
+  //     return { status: 'fail', message: 'No boss found for asset' };
+  //   }
+  // } else {
+  //   return { status: 'fail', message: 'Invalid monster type' };
+  // }
+
+  // 2. 설치한 타워가 맞는지 검증 (위치 포함)
+  const userTowers = getTower(userId);
+  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+  if (!towerInfo) {
+    return { status: 'fail', message: 'There is not a tower' };
+  }
+
+  // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
+  // const spawnMonsters = getMonster(userId);
+  // const mosterInfo = spawnMonsters.find((monster) => monster.id === towerId && monster.positionX === positionX && monster.positionY === positionY);
+  // if (!mosterInfo) {
+  //   return { status: 'fail', message: 'There is not a monster' };
+  // }
+
+  //  4. 공격 사거리 검증
+  // ㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠㅠ
+
+  //  5-1. 몬스터 체력 변경
+
+  // 5-2. (조건). 몬스터 체력 0 이면 몬스터 처치 및 보유 골드 변경 처리
+  // if (mosterInfo.health === 0) {
+  //   // 골드 처리
+  //   const userGold = getGold(userId);
+  //   if (!userGold) {
+  //     return { status: 'fail', message: 'No gold data for user' };
+  //   }
+
+  //   // 웨이브가 올라가면 몬스터 골드가 달라지겠지?
+  //   setGold(userId, userGold[userGold.length - 1].gold - cost, cost, 'UPGRADE', timestamp);
+
+  //   removeMonster(monsterId);
+  // }
+
+  return { monsterHp: 1, gold: 0 };
 };
 
+// const checkAsset = (id, assets) => {
+//   return assets.data.some((asset) => asset.id === id);
+// };
+
+/** 타워 Asset 정보 체크 */
 const checkTowerAsset = (type, towerId) => {
   const { pawnTowers, specialTowers } = getGameAssets();
   // 타워 유형에 대한 검증
@@ -215,4 +279,26 @@ const checkTowerAsset = (type, towerId) => {
   }
 
   return null;
+};
+
+/** 몬스터 Asset 정보 체크 */
+const checkMosterAsset = (type, monsterId) => {
+  const { bosses, monsters } = getGameAssets();
+  // 타워 유형에 대한 검증
+  if (type === TOWER_TYPE_PAWN) {
+    // 기준정보 유무 체크 (pawnTowers)
+    if (!monsters.data.some((monster) => monster.id === monsterId)) {
+      return 'No boss found for asset';
+    }
+  } else if (type === TOWER_TYPE_SPECIAL) {
+    // 기준정보 유무 체크 (specialTower)
+    if (!bosses.data.some((boss) => boss.id === monsterId)) {
+      return 'No monster found for asset';
+    }
+  } else {
+    // Type 값이 유효하지 않으면 Err
+    return 'Invalid monster type';
+  }
+
+  return { bosses, monsters };
 };
