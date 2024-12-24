@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http"; // node.js가 기본 보유 중인 모듈
-import initSocket from "./init/socket.js";
+import initSocket from "./inits/socket.js";
 import { loadGameAssets } from "./inits/assets.js";
 
 /* [1] express 서버 생성 */
@@ -11,7 +11,7 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 /* [2] 정적 파일 서비스 */
-app.use(express.static("public")); // public 폴더 내의 파일을 정적 상태로 외부로 제공
+// app.use(express.static("public")); // public 폴더 내의 파일을 정적 상태로 외부로 제공
 /* [3] 소켓 초기화 */
 initSocket(server); // 소켓은 실시간 통신을 돕는 역할
 
