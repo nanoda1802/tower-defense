@@ -1,4 +1,10 @@
-const golds = {};
+// const golds = {};
+const golds = {
+  tester: [
+    { id: 1001, gold: 1000, changeGold: 0, desc: 'START' },
+    { id: 1001, gold: 1000, changeGold: 0, desc: 'START' },
+  ],
+};
 
 //스테이지 초기화
 export const createGold = (userId) => {
@@ -8,13 +14,13 @@ export const createGold = (userId) => {
 export const getGold = (userId) => {
   return golds[userId];
 };
-export const setGold = (userId, sumGold, changeGold, desc) => {
+export const setGold = (userId, sumGold, changeGold, desc, timestamp) => {
   /***
    * sumGold    총 보유 골드
    * changeGold 증감치
-   * desc       분류 [PURCHASE,SELL,KILL]
+   * desc       분류 [START,PURCHASE,UPGRADE,SELL,KILL]
    */
-  return golds[userId].push({ sumGold, changeGold, desc });
+  return golds[userId].push({ gold: sumGold, changeGold, desc, timestamp });
 };
 
 export const clearGold = (userId) => {
