@@ -36,6 +36,10 @@ export const clearTower = (userId) => {
   towers[userId] = [];
 };
 
+export const clearRemoveTower = (userId) => {
+  removeTowers[userId] = [];
+};
+
 export const removeTower = (userId, towerId, positionX, positionY, timestamp) => {
   const index = towers[userId].findIndex((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
   if (index !== -1) {
