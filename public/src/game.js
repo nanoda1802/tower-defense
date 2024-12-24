@@ -19,7 +19,7 @@ let baseHp = 0; // 기지 체력
 let towerCost = 0; // 타워 구입 비용
 let numOfInitialTowers = 0; // 초기 타워 개수
 let monsterLevel = 0; // 몬스터 레벨
-let monsterSpawnInterval = 0; // 몬스터 생성 주기
+let monsterSpawnInterval = 3000; // 몬스터 생성 주기
 const monsters = [];
 const towers = [];
 
@@ -40,7 +40,6 @@ baseImage.src = "images/base.png";
 const pathImage = new Image();
 pathImage.src = "images/path.png";
 
-/* 몬스터 종류별로 이미지 준비해주는 반복문 */
 const monsterImages = [];
 for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
   const img = new Image();
@@ -50,14 +49,30 @@ for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
 
 let monsterPath;
 
-function generateFixedMonsterPath() {
+function generateRandomMonsterPath() {
   const path = [];
-  const startX = 0;
-  const endX = 500;
-  const fixedY = 250; // 경로의 y좌표를 50만큼 올려서 250으로 설정
+  let currentX = 0;
+  let currentY = Math.floor(Math.random() * 21) + 500; // 500 ~ 520 범위의 y 시작 (캔버스 y축 중간쯤에서 시작할 수 있도록 유도)
 
-  for (let x = startX; x <= endX; x += 50) {
-    path.push({ x: x, y: fixedY });
+  path.push({ x: currentX, y: currentY });
+
+  while (currentX < canvas.width) {
+    currentX += Math.floor(Math.random() * 100) + 50; // 50 ~ 150 범위의 x 증가
+    // x 좌표에 대한 clamp 처리
+    if (currentX > canvas.width) {
+      currentX = canvas.width;
+    }
+
+    currentY += Math.floor(Math.random() * 200) - 100; // -100 ~ 100 범위의 y 변경
+    // y 좌표에 대한 clamp 처리
+    if (currentY < 0) {
+      currentY = 0;
+    }
+    if (currentY > canvas.height) {
+      currentY = canvas.height;
+    }
+
+    path.push({ x: currentX, y: currentY });
   }
 
   return path;
@@ -86,8 +101,10 @@ function drawPath() {
     const angle = Math.atan2(deltaY, deltaX); // 두 점 사이의 각도는 tan-1(y/x)로 구해야 함 (자세한 것은 역삼각함수 참고): 삼각함수는 변의 비율! 역삼각함수는 각도를 구하는 것!
 
     for (let j = gap; j < distance - gap; j += segmentLength) {
-      const x = startX + Math.cos(angle) * j;
-      const y = startY + Math.sin(angle) * j;
+      // 사실 이거는 삼각함수에 대한 기본적인 이해도가 있으면 충분히 이해하실 수 있습니다.
+      // 자세한 것은 https://thirdspacelearning.com/gcse-maths/geometry-and-measure/sin-cos-tan-graphs/ 참고 부탁해요!
+      const x = startX + Math.cos(angle) * j; // 다음 이미지 x좌표 계산(각도의 코사인 값은 x축 방향의 단위 벡터 * j를 곱하여 경로를 따라 이동한 x축 좌표를 구함)
+      const y = startY + Math.sin(angle) * j; // 다음 이미지 y좌표 계산(각도의 사인 값은 y축 방향의 단위 벡터 * j를 곱하여 경로를 따라 이동한 y축 좌표를 구함)
       drawRotatedImage(pathImage, x, y, imageWidth, imageHeight, angle);
     }
   }
@@ -102,6 +119,7 @@ function drawRotatedImage(image, x, y, width, height, angle) {
 }
 
 function getRandomPositionNearPath(maxDistance) {
+  // 타워 배치를 위한 몬스터가 지나가는 경로 상에서 maxDistance 범위 내에서 랜덤한 위치를 반환하는 함수!
   const segmentIndex = Math.floor(Math.random() * (monsterPath.length - 1));
   const startX = monsterPath[segmentIndex].x;
   const startY = monsterPath[segmentIndex].y;
@@ -122,6 +140,11 @@ function getRandomPositionNearPath(maxDistance) {
 }
 
 function placeInitialTowers() {
+  /* 
+    타워를 초기에 배치하는 함수입니다.
+    무언가 빠진 코드가 있는 것 같지 않나요? 
+  */
+  numOfInitialTowers = 3; // 초기 타워 개수가 빠져있어요 ^_^
   for (let i = 0; i < numOfInitialTowers; i++) {
     const { x, y } = getRandomPositionNearPath(200);
     const tower = new Tower(x, y, towerCost);
@@ -131,6 +154,10 @@ function placeInitialTowers() {
 }
 
 function placeNewTower() {
+  /* 
+    타워를 구입할 수 있는 자원이 있을 때 타워 구입 후 랜덤 배치하면 됩니다.
+    빠진 코드들을 채워넣어주세요! 
+  */
   const { x, y } = getRandomPositionNearPath(200);
   const tower = new Tower(x, y);
   towers.push(tower);
@@ -139,15 +166,16 @@ function placeNewTower() {
 
 function placeBase() {
   const lastPoint = monsterPath[monsterPath.length - 1];
-  base = new Base(lastPoint.x + 80, lastPoint.y + 20, baseHp); // 경로의 끝에 기지를 배치
+  base = new Base(lastPoint.x, lastPoint.y, baseHp);
   base.draw(ctx, baseImage);
 }
 
 function spawnMonster() {
-  monsters.push(new Monster(monsterPath, monsterImages, monsterLevel, 80)); // 몬스터의 y 좌표를 80 올림
+  monsters.push(new Monster(monsterPath, monsterImages, monsterLevel));
 }
 
 function gameLoop() {
+  // 렌더링 시에는 항상 배경 이미지부터 그려야 합니다! 그래야 다른 이미지들이 배경 이미지 위에 그려져요!
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 이미지 다시 그리기
   drawPath(monsterPath); // 경로 다시 그리기
 
@@ -161,17 +189,21 @@ function gameLoop() {
   ctx.fillStyle = "black";
   ctx.fillText(`현재 레벨: ${monsterLevel}`, 100, 200); // 최고 기록 표시
 
+  // 타워 그리기 및 몬스터 공격 처리
   towers.forEach((tower) => {
     tower.draw(ctx, towerImage);
     tower.updateCooldown();
     monsters.forEach((monster) => {
-      const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
+      const distance = Math.sqrt(
+        Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
+      );
       if (distance < tower.range) {
         tower.attack(monster);
       }
     });
   });
 
+  // 몬스터가 공격을 했을 수 있으므로 기지 다시 그리기
   base.draw(ctx, baseImage);
 
   for (let i = monsters.length - 1; i >= 0; i--) {
@@ -179,25 +211,26 @@ function gameLoop() {
     if (monster.hp > 0) {
       const isDestroyed = monster.move(base);
       if (isDestroyed) {
+        /* 게임 오버 */
         alert("게임 오버. 스파르타 본부를 지키지 못했다...ㅠㅠ");
         location.reload();
       }
       monster.draw(ctx);
     } else {
+      /* 몬스터가 죽었을 때 */
       monsters.splice(i, 1);
     }
   }
 
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(gameLoop); // 지속적으로 다음 프레임에 gameLoop 함수 호출할 수 있도록 함
 }
 
 function initGame() {
   if (isInitGame) {
-    requestAnimationFrame(gameLoop);
     return;
   }
 
-  monsterPath = generateFixedMonsterPath(); // 몬스터 경로 생성
+  monsterPath = generateRandomMonsterPath(); // 몬스터 경로 생성
   initMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
   placeInitialTowers(); // 설정된 초기 타워 개수만큼 사전에 타워 배치
   placeBase(); // 기지 배치
@@ -207,20 +240,64 @@ function initGame() {
   isInitGame = true;
 }
 
+// 이미지 로딩 완료 후 서버와 연결하고 게임 초기화
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
   new Promise((resolve) => (towerImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
-  ...monsterImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...monsterImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
 ]).then(() => {
+  /* 서버 접속 코드 (여기도 완성해주세요!) */
   let somewhere;
-  serverSocket = io("서버주소", {
+  serverSocket = io("http://localhost:3000", {
     auth: {
-      token: somewhere,
+      token: somewhere, // 토큰이 저장된 어딘가에서 가져와야 합니다!
     },
   });
 
+  /* 서버에서 "connection" 메세지를 받았을 때  */
+  serverSocket.on("connection", (data) => {
+    // [1] 서버에서 받은 데이터 출력
+    console.log("connection: ", data);
+    // [2] 서버에서 받은 정보들 변수에 할당
+  });
+
+  /* 서버에서 "response" 메세지를 받았을 때 */
+  serverSocket.on("response", (data) => {
+    console.log("response : ", data);
+  });
+
+  /* 클라이언트에서 서버로 이벤트 보내기 위한 함수 */
+  // [1-1] 이벤트에 맞는 담당 핸들러 식별 위해 handlerId 매개변수 받고
+  // [1-2] 이벤트에 대한 정보 알려주기 위해 payload 매개변수 받음
+  const sendEvent = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("event", {
+        userId,
+        handlerId,
+        payload,
+      });
+      // [2] 해당 메세지에 대한 응답 바로 받는 일회성 소켓
+      serverSocket.once("response", (data) => {
+        if (data.handlerId === handlerId) {
+          resolve(data);
+        } else {
+          reject(new Error("응답이 요상해요?!"));
+        }
+      });
+    });
+  };
+  /* 
+    서버의 이벤트들을 받는 코드들은 여기다가 쭉 작성해주시면 됩니다! 
+    e.g. serverSocket.on("...", () => {...});
+    이 때, 상태 동기화 이벤트의 경우에 아래의 코드를 마지막에 넣어주세요! 최초의 상태 동기화 이후에 게임을 초기화해야 하기 때문입니다! 
+    if (!isInitGame) {
+      initGame();
+    }
+  */
   if (!isInitGame) {
     initGame();
   }
@@ -238,5 +315,3 @@ buyTowerButton.style.cursor = "pointer";
 buyTowerButton.addEventListener("click", placeNewTower);
 
 document.body.appendChild(buyTowerButton);
-
-initGame();

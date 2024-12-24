@@ -6,7 +6,7 @@ const registerHandler = (io) => {
     let userId = socket.handshake.query.userId;
 
     addUser({ userId, socketId: socket.id });
-    handleConnection(socket, userId, type);
+    handleConnection(socket, userId);
 
     //Event
     socket.on("event", (data) => handlerEvent(io, socket, data));
