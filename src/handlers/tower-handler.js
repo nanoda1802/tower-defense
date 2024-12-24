@@ -1,10 +1,10 @@
-import { getGameAssets } from '../inits/assets';
-import { PAWN_TOWER_COST, SPECIAL_TOWER_COST } from '../constants';
-import { getTower, setTower } from '../models/tower-model';
-import { getGold, setGold } from '../models/gold-model';
+import { getGameAssets } from "../inits/assets";
+import { PAWN_TOWER_COST, SPECIAL_TOWER_COST } from "../constants";
+import { getTower, setTower } from "../models/tower-model";
+import { getGold, setGold } from "../models/gold-model";
 
-const TOWER_TYPE_PAWN = 'PAWN';
-const TOWER_TYPE_SPECIAL = 'SPECIAL';
+const TOWER_TYPE_PAWN = "PAWN";
+const TOWER_TYPE_SPECIAL = "SPECIAL";
 
 export const getTowerHandler = (userId, payload) => {
   // [ payload : towerId, type , position(x,y)  ]
@@ -14,12 +14,12 @@ export const getTowerHandler = (userId, payload) => {
 
     // 1. 기준정보 검증
     const res = checkTowerAsset(type, towerId);
-    if (res !== null) return { status: 'fail', message: res };
+    if (res !== null) return { status: "fail", message: res };
 
     // 2. position(x,y)에 대한 검증
     const userTowers = getTower(userId);
     if (userTowers.data.some((tower) => tower.positionX === positionX && tower.positionY === positionY)) {
-      return { status: 'fail', message: 'There is already a tower at that location' };
+      return { status: "fail", message: "There is already a tower at that location" };
     }
 
     // 3. 보유 골드 검증
@@ -27,22 +27,22 @@ export const getTowerHandler = (userId, payload) => {
     const userGold = getGold(userId);
 
     if (!userGold) {
-      return { status: 'fail', message: 'There is no gold data for user' };
+      return { status: "fail", message: "There is no gold data for user" };
     }
 
     if (userGold.gold < cost) {
-      return { status: 'fail', message: 'Not enough money' };
+      return { status: "fail", message: "Not enough money" };
     }
 
     // 5. 골드 생성
-    setGold(userId, userGold.gold - cost, -cost, 'PURCHASE');
+    setGold(userId, userGold.gold - cost, -cost, "PURCHASE");
 
     // 6. 타워 생성
     setTower(userId, towerId, positionX, positionY);
 
-    return { status: 'success', gold: cost };
+    return { status: "success", gold: cost };
   } catch (error) {
-    throw new Error('!! Failed to load game assets !! ' + err.message);
+    throw new Error("!! Failed to load game assets !! " + err.message);
   }
 };
 /* 타워 판매 42 */
@@ -53,12 +53,12 @@ export const sellTowerHandler = (userId, payload) => {
 
   // 1. 기준정보 (towerId)
   const res = checkTowerAsset(type, towerId);
-  if (!res) return { status: 'fail', message: res };
+  if (!res) return { status: "fail", message: res };
 
   // 2. position(x,y) 위치에 towerId가 존재하는지
   const userTowers = getTower(userId);
   if (!userTowers.data.some((tower) => tower.towerId === towerId && tower.positionX === positionX && tower.positionY === positionY)) {
-    return { status: 'fail', message: 'There is not a tower' };
+    return { status: "fail", message: "There is not a tower" };
   }
 
   // 3. 타워 판매 처리
@@ -67,7 +67,7 @@ export const sellTowerHandler = (userId, payload) => {
   // 4. 골드 처리
   const userGold = getGold(userId);
 
-  return { status: 'success', gold: 5 };
+  return { status: "success", gold: 5 };
 };
 /* 타워 승급 43 */
 export const upgradeTowerHandler = (userId, payload) => {
@@ -98,16 +98,16 @@ const checkTowerAsset = (type, towerId) => {
   if (type === TOWER_TYPE_PAWN) {
     // 기준정보 유무 체크 (pawnTowers)
     if (!pawnTowers.data.some((tower) => tower.towerId === towerId)) {
-      return 'No pawn found for asset';
+      return "No pawn found for asset";
     }
   } else if (type === TOWER_TYPE_SPECIAL) {
     // 기준정보 유무 체크 (specialTower)
     if (!specialTowers.data.some((tower) => tower.towerId === towerId)) {
-      return 'No special found for asset';
+      return "No special found for asset";
     }
   } else {
     // Type 값이 유효하지 않으면 Err
-    return 'Invalid tower type';
+    return "Invalid tower type";
   }
 
   return null;
