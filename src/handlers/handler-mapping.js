@@ -1,6 +1,6 @@
 import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
 import { collideHandler } from "./headquater-handler.js";
-import { createMonsterHandler, moveMonsterHandler } from "./monster-handler.js";
+import { createBossHandler, createMonsterHandler, moveMonsterHandler, moveBossHandler } from "./monster-handler.js";
 import {
   getTowerHandler,
   sellTowerHandler,
@@ -16,7 +16,9 @@ const handlerMappings = {
   14: gameLoad,
   21: collideHandler,
   31: createMonsterHandler,
-  32: moveMonsterHandler,
+  32: createBossHandler,
+  33: moveMonsterHandler,
+  34: moveBossHandler,
   41: getTowerHandler,
   42: sellTowerHandler,
   43: upgradeTowerHandler,
