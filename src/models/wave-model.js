@@ -4,7 +4,7 @@ const waves = {};
 
 // 웨이브 생성 및 초기화
 export const createWave = (userId) => {
-  const { monsters, wave } = getGameAssets();
+  const { wave } = getGameAssets();
   waves[userId] = {
     currentWaveIndex: 0, // 현재 웨이브 인덱스
     waveData: wave.data, // 웨이브 데이터
@@ -12,7 +12,6 @@ export const createWave = (userId) => {
     isActive: false, // 웨이브 활성 여부
     remainingMonsters: 0, // 남은 몬스터 수
     bossSpawned: false, // 보스 소환 여부
-    score: 0, // 현재 점수
   };
   return waves[userId];
 };

@@ -1,5 +1,6 @@
 import { addUser } from "../models/user-model.js";
 import { handleDisconnect, handlerEvent, handleConnection } from "./helper.js";
+// import { waveChangeHandler } from "../handlers/wave-handler.js";
 
 const registerHandler = (io) => {
   io.on("connection", async (socket) => {
@@ -7,6 +8,9 @@ const registerHandler = (io) => {
 
     addUser({ userId, socketId: socket.id });
     handleConnection(socket, userId, type);
+
+    // // wave Handler 등록
+    // waveChangeHandler(io, socket);
 
     //Event
     socket.on("event", (data) => handlerEvent(io, socket, data));

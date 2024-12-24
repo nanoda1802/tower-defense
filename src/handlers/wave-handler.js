@@ -1,14 +1,4 @@
-import {
-  createWave,
-  getWaveStatus,
-  removeEnemy,
-  spawnBoss,
-  isWaveComplete,
-  progressToNextWave,
-  updateWaveScore,
-  validateEnemy,
-  validateWave,
-} from "../models/wave-model.js";
+import { createWave, getWaveStatus, removeEnemy, isWaveComplete, progressToNextWave, validateEnemy, validateWave } from "../models/wave-model.js";
 /* WaveChangeHandler 51 */
 export const waveChangeHandler = (io, socket) => {
   const userId = socket.handshake.query.userId;
@@ -43,16 +33,9 @@ export const waveChangeHandler = (io, socket) => {
     const removedEnemy = removeEnemy(userId, enemyUniqueId);
     if (removedEnemy) {
       const waveStatus = getWaveStatus(userId);
-      const newScore = updateWaveScore(userId, removedEnemy.score);
-
-      if (waveStatus.remainingMonsters === 0 && !waveStatus.bossSpawned) {
-        const boss = spawnBoss(userId);
-        io.to(userId).emit("wave:bossAppear", { boss });
-      }
 
       io.to(userId).emit("wave:status", {
         remainingMonsters: waveStatus.remainingMonsters,
-        currentScore: newScore,
         currentWave: waveStatus.currentWaveIndex + 1,
       });
     }
@@ -80,9 +63,7 @@ export const waveChangeHandler = (io, socket) => {
       if (progressToNextWave(userId)) {
         io.to(userId).emit("wave:nextWave");
       } else {
-        io.to(userId).emit("wave:allComplete", {
-          finalScore: waveStatus.score,
-        });
+        io.to(userId).emit("wave:allComplete", {});
       }
     }
   });
@@ -100,7 +81,6 @@ export const waveChangeHandler = (io, socket) => {
       io.to(userId).emit("wave:status", {
         currentWave: status.currentWaveIndex + 1,
         remainingMonsters: status.remainingMonsters,
-        currentScore: status.score,
         isActive: status.isActive,
         bossSpawned: status.bossSpawned,
       });
