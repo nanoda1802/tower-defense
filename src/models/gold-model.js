@@ -1,10 +1,5 @@
 // const golds = {};
-const golds = {
-  tester: [
-    { id: 1001, gold: 1000, changeGold: 0, desc: 'START' },
-    { id: 1001, gold: 1000, changeGold: 0, desc: 'START' },
-  ],
-};
+const golds = {};
 
 //스테이지 초기화
 export const createGold = (userId) => {
