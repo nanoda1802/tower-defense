@@ -13,6 +13,7 @@ const towers = {
         attack: 10,
         attack_speed: 10,
         range: 5,
+        splash: 10,
       },
     },
   ],

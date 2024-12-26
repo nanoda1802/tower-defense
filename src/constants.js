@@ -10,3 +10,6 @@ export const TOWER_TYPE_PAWN = 'pawn';
 export const TOWER_TYPE_SPECIAL = 'special';
 export const MONSTER_TYPE = 'monster';
 export const BOSS_TYPE = 'type';
+
+export const TOWER_COLOR_RED = 'red';
+export const TOWER_COLOR_BLACK = 'black';

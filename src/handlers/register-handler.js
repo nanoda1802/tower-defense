@@ -8,6 +8,9 @@ const registerHandler = (io) => {
     addUser({ userId, socketId: socket.id });
     handleConnection(socket, userId);
 
+    const gameAssets = getGameAssets(); //assets파일을 public으로 보내기
+    socket.emit("gameAssets", gameAssets);
+
     //Event
     socket.on("event", (data) => handlerEvent(io, socket, data));
 
