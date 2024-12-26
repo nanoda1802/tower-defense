@@ -6,10 +6,8 @@ const registerHandler = (io) => {
     let userId = socket.handshake.query.userId;
 
     addUser({ userId, socketId: socket.id });
+    console.log("!!!register!!!", userId);
     handleConnection(socket, userId);
-
-    const gameAssets = getGameAssets(); //assets파일을 public으로 보내기
-    socket.emit("gameAssets", gameAssets);
 
     //Event
     socket.on("event", (data) => handlerEvent(io, socket, data));
