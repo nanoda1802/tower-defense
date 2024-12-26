@@ -260,11 +260,14 @@ function gameLoop() {
 
   // 몬스터가 공격을 했을 수 있으므로 기지 다시 그리기
   base.draw(ctx, baseImage);
-
+  let isDestroyed;
   for (let i = monsters.length - 1; i >= 0; i--) {
     const monster = monsters[i];
     if (monster.hp > 0) {
-      const isDestroyed = monster.move(base);
+      monster.move();
+      if (monster.x >= base.x) {
+        isDestroyed = monster.colideWith(base);
+      }
       if (isDestroyed) {
         // sendEvent(12, {});
         /* 게임 오버 */

@@ -23,27 +23,14 @@ export class Monster {
     this.attackPower = 10 + 1 * level; // 몬스터의 공격력 (기지에 가해지는 데미지)
   }
 
-  move(base) {
-    if (this.currentIndex < this.path.length - 1) {
-      const nextPoint = this.path[this.currentIndex + 1];
-      const deltaX = nextPoint.x - this.x;
-      const distance = Math.abs(deltaX);
+  move() {
+    this.x += this.speed;
+  }
 
-      if (distance < this.speed) {
-        // path 한 칸의 남은 거리가 속도보다 작으면,
-        // 즉 다음 이동에 다음 path 칸으로 이동한다면 path의 인덱스 증가!
-        this.currentIndex++;
-        this.x = nextPoint.x;
-      } else {
-        // 이번 이동으로 다음 path 칸으로 가지 못 한다면, 그냥 이동
-        this.x += (deltaX / distance) * this.speed; // 단위 벡터: deltaX / distance
-      }
-      return false;
-    } else {
-      const isDestroyed = base.takeDamage(this.attackPower); // 기지에 도달하면 기지에 데미지를 입힙니다!
-      this.hp = 0; // 몬스터는 이제 기지를 공격했으므로 자연스럽게 소멸해야 합니다.
-      return isDestroyed;
-    }
+  colideWith(base) {
+    const isDestroyed = base.takeDamage(this.attackPower);
+    this.hp;
+    return isDestroyed;
   }
 
   draw(ctx) {
