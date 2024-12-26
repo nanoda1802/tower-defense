@@ -10,47 +10,47 @@
       "attack": 0,
       "attack_speed": 10,
       "range": 5,
-      "splash": 1
+      "splash": 5
     },
     {
       "id": 2002,
-      "card": "J",
+      "card": "Q",
       "color": "red",
       "type": "freezer",
       "attack": 10,
       "attack_speed": 10,
       "range": 5,
-      "splash": 1
+      "splash": 5
     },
     {
       "id": 2003,
-      "card": "Q",
+      "card": "K",
       "color": "red",
       "type": "attacker",
       "attack": 10,
       "attack_speed": 10,
       "range": 30,
-      "splash": 1
+      "splash": 5
     },
     {
       "id": 2004,
-      "card": "Q",
+      "card": "J",
       "color": "black",
       "type": "buffer",
       "attack": 0,
       "attack_speed": 10,
       "range": 5,
-      "splash": 1
+      "splash": 0
     },
     {
       "id": 2005,
-      "card": "K",
+      "card": "Q",
       "color": "black",
       "type": "freezer",
       "attack": 10,
       "attack_speed": 10,
       "range": 5,
-      "splash": 1
+      "splash": 0
     },
     {
       "id": 2006,
@@ -60,7 +60,7 @@
       "attack": 10,
       "attack_speed": 10,
       "range": 30,
-      "splash": 1
+      "splash": 0
     },
     {
       "id": 2007,
@@ -70,7 +70,7 @@
       "attack": 100,
       "attack_speed": 100,
       "range": 50,
-      "splash": 1
+      "splash": 10
     }
   ]
 }
