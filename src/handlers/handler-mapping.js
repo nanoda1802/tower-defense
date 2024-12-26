@@ -1,13 +1,15 @@
-import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
-import { collideHandler } from "./headquater-handler.js";
-import { createMonsterHandler, moveMonsterHandler } from "./monster-handler.js";
+import { registerHandler } from './register-handler.js';
+import { loginHandler } from './login-handler.js';
+import { gameStart, gameEnd, gameSave, gameLoad } from './game-handler.js';
+import { collideHandler } from './headquater-handler.js';
+import { createMonsterHandler, moveMonsterHandler } from './monster-handler.js';
 import {
   getTowerHandler,
   sellTowerHandler,
   upgradeTowerHandler,
   attackHandler,
-} from "./tower-handler.js";
-import { waveChangeHandler } from "./wave-handler.js";
+} from './tower-handler.js';
+import { waveChangeHandler } from './wave-handler.js';
 
 const handlerMappings = {
   11: gameStart,
@@ -22,6 +24,8 @@ const handlerMappings = {
   43: upgradeTowerHandler,
   44: attackHandler,
   51: waveChangeHandler,
+  61: registerHandler,
+  62: loginHandler,
 };
 
 export default handlerMappings;

@@ -1,17 +1,24 @@
-import express from "express";
-import { createServer } from "http"; // node.js가 기본 보유 중인 모듈
-import initSocket from "./inits/socket.js";
-import { loadGameAssets } from "./inits/assets.js";
+import express from 'express';
+import dotenv from 'dotenv';
+import { createServer } from 'http'; // node.js가 기본 보유 중인 모듈
+import initSocket from './inits/socket.js';
+import { loadGameAssets } from './inits/assets.js';
+// import AccountRouter from './routes/account.router.js';
+
+// 환경 변수 로드 = .env 파일 활용
+dotenv.config();
 
 /* [1] express 서버 생성 */
 const app = express();
 const server = createServer(app);
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // .env에 있는 기본 포트 or 3000으로 서버 오픈
 /* body parsers */
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// app.use('/api/account', [AccountRouter]);
 /* [2] 정적 파일 서비스 */
 // app.use(express.static("public")); // public 폴더 내의 파일을 정적 상태로 외부로 제공
+
 /* [3] 소켓 초기화 */
 initSocket(server); // 소켓은 실시간 통신을 돕는 역할
 
@@ -24,9 +31,9 @@ server.listen(PORT, async () => {
     const assets = await loadGameAssets();
     // [5-2 a] 불러온 재료 데이터 및 성공 메세지 출력
     console.log(assets);
-    console.log("Assets loaded successfully");
+    console.log('Assets loaded successfully');
   } catch (err) {
     // [5-2 b] 에러 메세지 및 내용 출력
-    console.error("Failed to load game assets", err);
+    console.error('Failed to load game assets', err);
   }
 });

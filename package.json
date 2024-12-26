@@ -1,5 +1,5 @@
 {
-  "name": "alice-tower-defence",
+  "name": "alice-tower-defense",
   "version": "1.0.0",
   "main": "src/app.js",
   "license": "MIT",
@@ -7,11 +7,14 @@
   "author": "",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.1.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "http-server": "^14.1.1",
     "jsonwebtoken": "^9.0.2",
+    "prisma": "^6.1.0",
+    "redis": "^4.7.0",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
