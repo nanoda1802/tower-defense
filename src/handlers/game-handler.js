@@ -14,12 +14,9 @@ export const gameStart = (userId, payload) => {
   // 해당 사용자의 이전 스테이지 정보 초기화
   clearWave(userId);
   // 첫 번째 스테이지(id: 1)로 설정하고 시작 시간 기록
-  setWave(userId, wave.data[0].id, payload.timestamp);
-  //골드 초기화
-  clearGold(userId);
+  // setWave(userId, wave.data[0].id, payload.timestamp);
   // 초기 골드 설정 지금은 편의상 100으로 설정
-  setGold(userId, 0, 100, "INITIAL", payload.timestamp);
-  // sumGold: 0, changeGold: 100, desc: "INITIAL(초기값)"
+  console.log("웨 않됨???????", userId);
   //타워 초기화
   clearTower(userId);
   //제거 타워 초기화
@@ -30,6 +27,7 @@ export const gameStart = (userId, payload) => {
   clearHeadquater(userId);
   //hQ 채력 100hp
   setHeadquater(userId, 100, payload.timestamp);
+  return { status: "success", message: "Game Started!!" };
 };
 
 /* Game End 12 */
