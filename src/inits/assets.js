@@ -37,9 +37,10 @@ export const loadGameAssets = async () => {
       readFileAsync("monster.json"),
       readFileAsync("pawn-tower.json"),
       readFileAsync("special-tower.json"),
+      readFileAsync("wave.json")
     ]);
     // [2] 재료 데이터 저장하는 객체에 불러온 JSON 객체들 저장
-    gameAssets = { bosses, monsters, pawnTowers, specialTowers };
+    gameAssets = { bosses, monsters, pawnTowers, specialTowers, waves };
     // [3 a] 객체 통째로 반환
     return gameAssets;
   } catch (err) {
