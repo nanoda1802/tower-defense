@@ -211,9 +211,7 @@ function gameLoop() {
     tower.draw(ctx, towerImage);
     tower.updateCooldown();
     monsters.forEach((monster) => {
-      const distance = Math.sqrt(
-        Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
-      );
+      const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
       if (distance < tower.range) {
         tower.attack(monster);
       }
@@ -263,9 +261,7 @@ Promise.all([
   new Promise((resolve) => (towerImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
-  ...monsterImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
+  ...monsterImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
 ]).then(() => {
   /* 서버 접속 코드 (여기도 완성해주세요!) */
   let somewhere;
@@ -350,18 +346,14 @@ function isPositionValid(x, y) {
   const pathRadius = 60; // 경로 이미지 반경
   // 다른 타워와의 충돌 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2));
     if (distance < towerRadius) {
       return false; // 다른 타워와 겹침
     }
   }
   // 경로와의 충돌 확인
   for (const point of monsterPath) {
-    const distance = Math.sqrt(
-      Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2),
-    );
+    const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
     if (distance < pathRadius) {
       return false; // 경로와 겹침
     }
@@ -385,11 +377,9 @@ function showTowerInfo(tower) {
     towerInfo.style.display = "none";
   });
   // 승급 버튼 누르면 승급
-  document
-    .getElementById("upgradeTowerButton")
-    .addEventListener("click", () => {
-      upgradeTower(tower);
-    });
+  document.getElementById("upgradeTowerButton").addEventListener("click", () => {
+    upgradeTower(tower);
+  });
 }
 /* 타워 정보 창 숨김 함수 */
 function hideTowerInfo() {
@@ -427,9 +417,7 @@ canvas.addEventListener("click", (event) => {
   const y = event.clientY - rect.top;
   // 타워 클릭 여부 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2));
     if (distance < 30) {
       // 타워 반경 내 클릭
       selectedTower = tower; // 타워 선택
