@@ -1,12 +1,7 @@
 import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
 import { collideHandler } from "./headquater-handler.js";
 import { createBossHandler, createMonsterHandler, moveMonsterHandler, moveBossHandler } from "./monster-handler.js";
-import {
-  getTowerHandler,
-  sellTowerHandler,
-  upgradeTowerHandler,
-  attackHandler,
-} from "./tower-handler.js";
+import { getTowerHandler, sellTowerHandler, upgradeTowerHandler, attackHandler } from "./tower-handler.js";
 import { waveChangeHandler } from "./wave-handler.js";
 
 const handlerMappings = {

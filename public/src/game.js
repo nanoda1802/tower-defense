@@ -11,6 +11,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const NUM_OF_MONSTERS = 5; // 몬스터 개수
+const NUM_OF_TOWERS = 13;
 
 let userGold = 0; // 유저 골드
 let base; // 기지 객체
@@ -29,16 +30,29 @@ let isInitGame = false;
 
 // 이미지 로딩 파트
 const backgroundImage = new Image();
-backgroundImage.src = "images/bg.webp";
+backgroundImage.src = "images/background.png";
 
-const towerImage = new Image();
-towerImage.src = "images/tower.png";
+const blackTowerImages = [];
+for (let i = 1; i <= NUM_OF_TOWERS; i++) {
+  const img = new Image();
+  img.src = `images/towerB${i}.png`;
+  blackTowerImages.push(img);
+}
+const redTowerImages = [];
+for (let i = 1; i <= NUM_OF_TOWERS; i++) {
+  const img = new Image();
+  img.src = `images/towerR${i}.png`;
+  redTowerImages.push(img);
+}
+
+const jokerImage = new Image();
+jokerImage.src = "images/towerJoker.png";
 
 const baseImage = new Image();
-baseImage.src = "images/base.png";
+baseImage.src = "images/hq.png";
 
 const pathImage = new Image();
-pathImage.src = "images/path.png";
+pathImage.src = "images/road.png";
 
 const monsterImages = [];
 for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
@@ -80,7 +94,7 @@ function generateRandomMonsterPath() {
 
 function generateStraightMonsterPath() {
   const path = [];
-  const fixedY = Math.trunc((canvas.height / 3) * 2); // y 값을 캔버스 높이의 절반으로 고정
+  const fixedY = Math.trunc((canvas.height / 7) * 4);
   const stepX = 100; // x 값 증가 간격
   let currentX = 0;
 
@@ -99,8 +113,8 @@ function initMap() {
 
 function drawPath() {
   const segmentLength = 20; // 몬스터 경로 세그먼트 길이
-  const imageWidth = 60; // 몬스터 경로 이미지 너비
-  const imageHeight = 60; // 몬스터 경로 이미지 높이
+  const imageWidth = 100; // 몬스터 경로 이미지 너비
+  const imageHeight = 100; // 몬스터 경로 이미지 높이
   const gap = 5; // 몬스터 경로 이미지 겹침 방지를 위한 간격
 
   for (let i = 0; i < monsterPath.length - 1; i++) {
@@ -159,21 +173,23 @@ function placeInitialTowers() {
     무언가 빠진 코드가 있는 것 같지 않나요? 
   */
   numOfInitialTowers = 0; // 초기 타워 개수가 빠져있어요 ^_^
-  for (let i = 0; i < numOfInitialTowers; i++) {
-    const { x, y } = getRandomPositionNearPath(200);
-    const tower = new Tower(x, y, towerCost);
-    towers.push(tower);
-    tower.draw(ctx, towerImage);
-  }
 }
 
-function placeNewTower() {
+function placeNewTower(color, towerNum) {
   if (pendingTowerPosition) {
-    const { x, y } = pendingTowerPosition;
+    const { curX: x, curY: y } = pendingTowerPosition;
     // 타워 생성
-    const tower = new Tower(x, y, towerCost);
+    let towerImage;
+    if (color === "black") {
+      towerImage = blackTowerImages[towerNum - 1];
+    } else if (color === "red") {
+      towerImage = redTowerImages[towerNum - 1];
+    } else {
+      towerImage = jokerImage;
+    }
+    const tower = new Tower(x, y, towerCost, towerImage);
     towers.push(tower);
-    tower.draw(ctx, towerImage);
+    tower.draw(ctx);
     // 생성 후 상태 초기화
     pendingTowerPosition = null;
   } else {
@@ -208,7 +224,7 @@ function gameLoop() {
 
   // 타워 그리기 및 몬스터 공격 처리
   towers.forEach((tower) => {
-    tower.draw(ctx, towerImage);
+    tower.draw(ctx);
     tower.updateCooldown();
     monsters.forEach((monster) => {
       const distance = Math.sqrt(
@@ -260,9 +276,15 @@ function initGame() {
 // 이미지 로딩 완료 후 서버와 연결하고 게임 초기화
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
-  new Promise((resolve) => (towerImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
+  new Promise((resolve) => (jokerImage.onload = resolve)),
+  ...blackTowerImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
+  ...redTowerImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
   ...monsterImages.map(
     (img) => new Promise((resolve) => (img.onload = resolve)),
   ),
@@ -320,17 +342,36 @@ Promise.all([
   }
 });
 
-const buyTowerButton = document.createElement("button");
-buyTowerButton.textContent = "타워 구입";
-buyTowerButton.style.position = "absolute";
-buyTowerButton.style.top = "10px";
-buyTowerButton.style.right = "10px";
-buyTowerButton.style.padding = "10px 20px";
-buyTowerButton.style.fontSize = "16px";
-buyTowerButton.style.cursor = "pointer";
-document.body.appendChild(buyTowerButton);
+function createButton(text, top) {
+  const btn = document.createElement("button");
+  btn.textContent = text;
+  btn.style.position = "absolute";
+  btn.style.top = `${top}px`;
+  btn.style.right = "10px";
+  btn.style.padding = "10px 20px";
+  btn.style.fontSize = "16px";
+  btn.style.cursor = "pointer";
+  return btn;
+}
 
-buyTowerButton.addEventListener("click", placeNewTower);
+const buyBlackButton = createButton("검정 병사 구입", 10);
+document.body.appendChild(buyBlackButton);
+buyBlackButton.addEventListener("click", () => {
+  placeNewTower("black", 2);
+});
+
+const buyRedButton = createButton("빨강 병사 구입", 50);
+document.body.appendChild(buyRedButton);
+buyRedButton.addEventListener("click", () => {
+  placeNewTower("red", 2);
+});
+
+const getSpecialButton = createButton("특수 병사 뽑기", 90);
+document.body.appendChild(getSpecialButton);
+getSpecialButton.addEventListener("click", () => {
+  // sendEvent로 가챠 진행 후 그 응답을 placeNewTower의 매개변수로 투입
+  placeNewTower("joker");
+});
 
 /* 타워 정보 보여주는 div 생성 */
 const towerInfoPanel = document.createElement("div");
@@ -346,12 +387,14 @@ document.body.appendChild(towerInfoPanel);
 
 /* 클릭 위치에 타워나 경로가 있는지 확인하는 함수 */
 function isPositionValid(x, y) {
-  const towerRadius = 78; // 타워 이미지 반경
-  const pathRadius = 60; // 경로 이미지 반경
+  const curX = Math.floor(x / 100) * 100;
+  const curY = Math.floor(y / 100) * 100;
+  const towerRadius = 20; // 타워 이미지 반경
+  const pathRadius = 20; // 경로 이미지 반경
   // 다른 타워와의 충돌 확인
   for (const tower of towers) {
     const distance = Math.sqrt(
-      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
+      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
     );
     if (distance < towerRadius) {
       return false; // 다른 타워와 겹침
@@ -360,7 +403,7 @@ function isPositionValid(x, y) {
   // 경로와의 충돌 확인
   for (const point of monsterPath) {
     const distance = Math.sqrt(
-      Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2),
+      Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2),
     );
     if (distance < pathRadius) {
       return false; // 경로와 겹침
@@ -425,10 +468,12 @@ canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
+  const curX = Math.floor(x / 100) * 100;
+  const curY = Math.floor(y / 100) * 100;
   // 타워 클릭 여부 확인
   for (const tower of towers) {
     const distance = Math.sqrt(
-      Math.pow(tower.x - x, 2) + Math.pow(tower.y - y, 2),
+      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
     );
     if (distance < 30) {
       // 타워 반경 내 클릭
@@ -440,7 +485,9 @@ canvas.addEventListener("click", (event) => {
   // 타워가 없는 빈 공간을 클릭했을 때
   if (isPositionValid(x, y)) {
     hideTowerInfo(); // 타워 이외의 캔버스 클릭 시 선택 해제
-    pendingTowerPosition = { x, y }; // 생성 대기 중인 타워 위치 설정
+    const curX = Math.floor(x / 100) * 100;
+    const curY = Math.floor(y / 100) * 100;
+    pendingTowerPosition = { curX, curY }; // 생성 대기 중인 타워 위치 설정
     selectedTower = null; // 선택 초기화
   }
 });

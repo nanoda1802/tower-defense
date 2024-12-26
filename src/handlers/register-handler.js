@@ -1,5 +1,6 @@
 import { addUser } from "../models/user-model.js";
 import { handleDisconnect, handlerEvent, handleConnection } from "./helper.js";
+// import { waveChangeHandler } from "../handlers/wave-handler.js";
 
 const registerHandler = (io) => {
   io.on("connection", async (socket) => {
