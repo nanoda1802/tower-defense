@@ -4,8 +4,10 @@ import { setWave, clearWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
 import { getDeathMonsters, getDeathBosses } from "../models/monster-model.js";
 import { clearscore } from "../models/score-model.js";
+import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
+
 /* Game Start 11 */
-//uuid 사용자 고유의 아이디이다.
+//userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
   // 게임 시작 시 에셋 가져오기
   const { wave } = getGameAssets();
@@ -24,9 +26,9 @@ export const gameStart = (userId, payload) => {
   clearRemoveTower(userId);
   //초기 스코어 초기화
   clearscore(userId);
-  //hQ 초기화
+  //hQ 채력 초기화
   clearHeadquater(userId);
-  //hQ 초기설정
+  //hQ 채력 100hp
   setHeadquater(userId, 100, payload.timestamp);
 };
 
@@ -38,14 +40,13 @@ export const gameEnd = (userId, payload) => {
   leftGold: 남은 골드의 량
   */
   const { timestamp: gameEndTime, score, leftGold } = payload;
+
   // payload 타입 검사
   if (typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
     throw new Error("잘못된 payload 형식");
   }
 
   const { bosses, monsters, wave } = getGameAssets();
-
-  saveGameTime(userId, gameEndTime); // 게임 종료 시간을 저장하는 함수 호출
 
   //이게 서버에서 계산된 스코어
   let serverScore = 0;
@@ -59,7 +60,7 @@ export const gameEnd = (userId, payload) => {
   //boss kill도 마찬가지
   const bossKill = getDeathBosses();
 
-  //monsterkill은 객체로 어떤 monsterid가 몇마리 죽었는지가 나온다.  이걸 monster.json에서 가져와야 한다
+  //monsterkill은 객체로 어떤 monsterid가 몇마리 죽었는지가 나온다. 이걸 monster.json에서 가져와야 한다
   for (const [monsterId, kill] of monsterKill) {
     const monster = monsters.data.find((m) => m.id === monsterId);
     if (!monster) {
@@ -70,7 +71,7 @@ export const gameEnd = (userId, payload) => {
   }
   console.log(monsterKillScore);
   /* 일단 monsterkill에 있는 monster id와 처치수를 받아온다 그다음 wave.json에서 몬스토 id와 monster_cnt 가져온다 
-그리고 그 몬스터의 수가 같으면 all_kill_score를 더한다.*/
+     그리고 그 몬스터의 수가 같으면 all_kill_score를 더한다.*/
 
   for (const [monsterId, kill] of monsterKill) {
     const waveData = wave.data.find((w) => w.monster_id === monsterId); // wave.json에서 monster_id와 일치하는 항목 찾기
@@ -116,13 +117,27 @@ export const gameEnd = (userId, payload) => {
     console.error(`클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`);
     return;
   }
-  //스코어 저장 완료
+
+  // 모든 검증이 끝났으면 userid와 스코어와 leftGold 저장 db에 저장하고 싶은데 아직 어떻게 저장해야 된다 redis로 저장.
+  return {
+    status: "success",
+    message: "게임이 성공적으로 종료되었습니다",
+    score: serverScore,
+    details: {
+      userId,
+      serverScore,
+      leftGold,
+      gameEndTime,
+    },
+  };
 };
 
 /* Game Save 13 */
-export const gameSave = () => {
+export const gameSave = (userId, payload) => {
   //게임저장
   //현재 게임 상태를 저장하는 함수
 };
 /* Game Load 14 */
-export const gameLoad = () => {};
+export const gameLoad = (userId, payload) => {
+  //게임 불러오기
+};

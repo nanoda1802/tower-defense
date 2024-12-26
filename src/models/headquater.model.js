@@ -8,7 +8,7 @@ export const createHeadquater = (userId) => {
 export const getHeadquater = (userId) => {
   return headquaters[userId];
 };
-//현재 hp, 감소후 hp 설정
+
 export const setHeadquater = (userId, hp, timestamp) => {
   return headquaters[userId].push({ hp, timestamp });
 };

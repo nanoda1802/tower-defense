@@ -1,2 +1,3 @@
 /* CollideHandler 21 */
-export const collideHandler = () => {};
+export const collideHandler = () => {
+};
