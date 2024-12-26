@@ -1,9 +1,28 @@
-
-import { getGameAssets } from '../inits/assets.js';
-import { PAWN_TOWER_COST, SPECIAL_TOWER_COST, TOWER_TYPE_PAWN, TOWER_TYPE_SPECIAL, MONSTER_TYPE, BOSS_TYPE, TOWER_COLOR_BLACK, TOWER_COLOR_RED } from '../constants.js';
-import { getTower, setTower, removeTower, upgradeTower, getRemoveTower } from '../models/tower-model.js';
-import { getGold, setGold } from '../models/gold-model.js';
-import { getAliveBosses, getAliveMonsters, setDeathMonsters, setDeathBosses } from '../models/monster-model.js';
+import { getGameAssets } from "../inits/assets.js";
+import {
+  PAWN_TOWER_COST,
+  SPECIAL_TOWER_COST,
+  TOWER_TYPE_PAWN,
+  TOWER_TYPE_SPECIAL,
+  MONSTER_TYPE,
+  BOSS_TYPE,
+  TOWER_COLOR_BLACK,
+  TOWER_COLOR_RED,
+} from "../constants.js";
+import {
+  getTower,
+  setTower,
+  removeTower,
+  upgradeTower,
+  getRemoveTower,
+} from "../models/tower-model.js";
+import { getGold, setGold } from "../models/gold-model.js";
+import {
+  getAliveBosses,
+  getAliveMonsters,
+  setDeathMonsters,
+  setDeathBosses,
+} from "../models/monster-model.js";
 
 export const getTowerHandler = (userId, payload) => {
   try {
@@ -12,12 +31,21 @@ export const getTowerHandler = (userId, payload) => {
 
     // 2. position(x,y) 위치에 towerId가 존재하는지
     const userTowers = getTower(userId);
-    if (userTowers.some((tower) => tower.positionX === positionX && tower.positionY === positionY)) {
-      return { status: "fail", message: "There is already a tower at that location" };
+    if (
+      userTowers.some(
+        (tower) =>
+          tower.positionX === positionX && tower.positionY === positionY,
+      )
+    ) {
+      return {
+        status: "fail",
+        message: "There is already a tower at that location",
+      };
     }
 
     // 3. 보유 골드 확인
-    const cost = type === TOWER_TYPE_PAWN ? PAWN_TOWER_COST : SPECIAL_TOWER_COST;
+    const cost =
+      type === TOWER_TYPE_PAWN ? PAWN_TOWER_COST : SPECIAL_TOWER_COST;
     const userGold = getGold(userId);
 
     if (!userGold) {
@@ -29,7 +57,7 @@ export const getTowerHandler = (userId, payload) => {
     }
 
     // 6. 타워 생성
-    setTower(userId, towerId, positionX, positionY);
+    // setTower(userId, towerId, positionX, positionY);
     // 5. 골드 처리
     const resGold = userGold[userGold.length - 1].gold - cost;
     setGold(userId, resGold, -cost, "PURCHASE", timestamp);
@@ -100,7 +128,12 @@ export const sellTowerHandler = (userId, payload) => {
 
     // 2. position(x,y) 위치에 towerId가 존재하는지
     const userTowers = getTower(userId);
-    const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+    const towerInfo = userTowers.find(
+      (tower) =>
+        tower.data.id === towerId &&
+        tower.positionX === positionX &&
+        tower.positionY === positionY,
+    );
     if (!towerInfo) {
       return { status: "fail", message: "There is not a tower" };
     }
@@ -113,9 +146,18 @@ export const sellTowerHandler = (userId, payload) => {
     if (!userGold) {
       return { status: "fail", message: "No gold data for user" };
     }
-    const price = towerInfo.type === TOWER_TYPE_PAWN ? (PAWN_TOWER_COST / 2) * Number(towerInfo.data.card) : SPECIAL_TOWER_COST / 2;
+    const price =
+      towerInfo.type === TOWER_TYPE_PAWN
+        ? (PAWN_TOWER_COST / 2) * Number(towerInfo.data.card)
+        : SPECIAL_TOWER_COST / 2;
 
-    setGold(userId, userGold[userGold.length - 1].gold + price, price, "SELL", timestamp);
+    setGold(
+      userId,
+      userGold[userGold.length - 1].gold + price,
+      price,
+      "SELL",
+      timestamp,
+    );
     // console.log(getGold(userId));
 
     // 4. 판매처리 (타워)
@@ -123,7 +165,11 @@ export const sellTowerHandler = (userId, payload) => {
     // console.log(getTower(userId));
     // console.log(getRemoveTower(userId));
 
-    return { status: "success", gold: userGold[userGold.length - 1].gold };
+    return {
+      status: "success",
+      gold: userGold[userGold.length - 1].gold,
+      price,
+    };
   } catch (error) {
     throw new Error("Failed to sellTowerHandler !! " + error.message);
   }
@@ -142,11 +188,14 @@ export const upgradeTowerHandler = (userId, payload) => {
   const res = checkTowerAsset(type, towerId);
   if (res) return { status: "fail", message: res };
 
-  // 3. 타워 판매 처리
-  removeTower(userId, towerId, positionX, positionY);
   // 2. position(x,y) 위치에 towerId가 존재하는지
   const userTowers = getTower(userId);
-  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+  const towerInfo = userTowers.find(
+    (tower) =>
+      tower.data.id === towerId &&
+      tower.positionX === positionX &&
+      tower.positionY === positionY,
+  );
   if (!towerInfo) {
     return { status: "fail", message: "There is not a tower" };
   }
@@ -170,7 +219,13 @@ export const upgradeTowerHandler = (userId, payload) => {
     return { status: "fail", message: "Not enough money" };
   }
 
-  setGold(userId, userGold[userGold.length - 1].gold - cost, cost, "UPGRADE", timestamp);
+  setGold(
+    userId,
+    userGold[userGold.length - 1].gold - cost,
+    cost,
+    "UPGRADE",
+    timestamp,
+  );
   // console.log(getGold(userId));
 
   // 4. 타워 업글 처리
@@ -179,6 +234,7 @@ export const upgradeTowerHandler = (userId, payload) => {
   return {
     status: "success",
     gold: userGold[userGold.length - 1].gold,
+    cost,
     positionX: towerInfo.positionX,
     positionY: towerInfo.positionY,
     type: towerInfo.type,
@@ -189,15 +245,24 @@ export const upgradeTowerHandler = (userId, payload) => {
 /* 타워 공격 44 */
 export const attackHandler = (userId, payload) => {
   const { pawnTowers, specialTowers, monsters, bosses } = getGameAssets();
-  const { towerType, towerId, towerPositionX, towerPositionY, monsterType, monsterId, monsterPositionX, monsterPositionY } = payload;
+  const {
+    towerType,
+    towerId,
+    towerPositionX,
+    towerPositionY,
+    monsterType,
+    monsterId,
+    monsterPositionX,
+    monsterPositionY,
+  } = payload;
 
   // 0. 타워 및 몬스터 Type 유효성 검사
   if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
-    return { status: 'fail', message: 'Invalid tower type' };
+    return { status: "fail", message: "Invalid tower type" };
   }
 
   if (monsterType !== MONSTER_TYPE && monsterType !== BOSS_TYPE) {
-    return { status: 'fail', message: 'Invalid monster type' };
+    return { status: "fail", message: "Invalid monster type" };
   }
 
   /** 1. 기준정보 체크
@@ -210,26 +275,45 @@ export const attackHandler = (userId, payload) => {
 
   // 몬스터
   const mosterRes = checkMosterAsset(monsterType, monsterId);
-  if (mosterRes) return { status: 'fail', message: mosterRes };
+  if (mosterRes) return { status: "fail", message: mosterRes };
 
   // 2. 설치한 타워가 맞는지 검증 (위치 포함)
   const userTowers = getTower(userId);
-  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === towerPositionX && tower.positionY === towerPositionY);
+  const towerInfo = userTowers.find(
+    (tower) =>
+      tower.data.id === towerId &&
+      tower.positionX === towerPositionX &&
+      tower.positionY === towerPositionY,
+  );
   if (!towerInfo) {
     return { status: "fail", message: "There is not a tower" };
   }
 
   // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
-  const aliveTargets = monsterType === MONSTER_TYPE ? getAliveMonsters(userId) : getAliveBosses(userId);
-  const targetInfo = aliveTargets.find((target) => target.id === towerId && target.positionX === monsterPositionX && target.positionY === monsterPositionY);
+  const aliveTargets =
+    monsterType === MONSTER_TYPE
+      ? getAliveMonsters(userId)
+      : getAliveBosses(userId);
+  const targetInfo = aliveTargets.find(
+    (target) =>
+      target.id === towerId &&
+      target.positionX === monsterPositionX &&
+      target.positionY === monsterPositionY,
+  );
   if (!targetInfo) {
-    return { status: 'fail', message: `There is not a ${monsterType === MONSTER_TYPE ? 'moster' : 'boss'}` };
+    return {
+      status: "fail",
+      message: `There is not a ${monsterType === MONSTER_TYPE ? "moster" : "boss"}`,
+    };
   }
 
   //  4. 공격 사거리 검증
-  const distance = Math.sqrt(Math.pow(towerInfo.positionX - targetInfo.positionX, 2) + Math.pow(towerInfo.positionY - targetInfo.positionY, 2));
+  const distance = Math.sqrt(
+    Math.pow(towerInfo.positionX - targetInfo.positionX, 2) +
+      Math.pow(towerInfo.positionY - targetInfo.positionY, 2),
+  );
   if (distance >= towerInfo.data.range) {
-    return { status: 'fail', message: 'This is not a valid attack' };
+    return { status: "fail", message: "This is not a valid attack" };
   }
 
   /*** 5. 공격 처리
@@ -263,14 +347,20 @@ export const attackHandler = (userId, payload) => {
     const alliveBosses = getAliveBosses(userId);
 
     alliveMonsters.forEach((monster) => {
-      const distance = Math.sqrt(Math.pow(targetInfo.positionX - monster.positionX, 2) + Math.pow(targetInfo.positionY - monster.positionY, 2));
+      const distance = Math.sqrt(
+        Math.pow(targetInfo.positionX - monster.positionX, 2) +
+          Math.pow(targetInfo.positionY - monster.positionY, 2),
+      );
       if (distance < towerInfo.data.range) {
         monsterArr.push(monster);
       }
     });
 
     alliveBosses.forEach((boss) => {
-      const distance = Math.sqrt(Math.pow(targetInfo.positionX - boss.positionX, 2) + Math.pow(targetInfo.positionY - boss.positionY, 2));
+      const distance = Math.sqrt(
+        Math.pow(targetInfo.positionX - boss.positionX, 2) +
+          Math.pow(targetInfo.positionY - boss.positionY, 2),
+      );
       if (distance < towerInfo.data.range) {
         bossArr.push(boss);
       }
@@ -288,7 +378,12 @@ export const attackHandler = (userId, payload) => {
   }
 
   const userGold = getGold(userId);
-  return { monsterHp: 1, gold: userGold[userGold.length - 1].gold, monsters: monsterArr, bosses: bossArr };
+  return {
+    monsterHp: 1,
+    gold: userGold[userGold.length - 1].gold,
+    monsters: monsterArr,
+    bosses: bossArr,
+  };
 };
 
 export const buffTowerHandler = (userId, payload) => {};
@@ -344,13 +439,20 @@ const checkMosterAsset = (type, monsterId) => {
 
 /** 타워 공격 (몬스터 체력 감소 처리) */
 const towerAttack = (userId, monsterType, towerInfo, targetInfo, timestamp) => {
-  targetInfo.health = targetInfo.health - towerInfo.data.attack < 0 ? 0 : targetInfo.health;
+  targetInfo.health =
+    targetInfo.health - towerInfo.data.attack < 0 ? 0 : targetInfo.health;
 
   // 몬스터 HP가 0이면
   if (targetInfo.health === 0) {
     // 골드 획득 처리
     const userGold = getGold(userId);
-    setGold(userId, userGold[userGold.length - 1].gold + targetInfo.gold, targetInfo.gold, 'KILL', timestamp);
+    setGold(
+      userId,
+      userGold[userGold.length - 1].gold + targetInfo.gold,
+      targetInfo.gold,
+      "KILL",
+      timestamp,
+    );
 
     // 사망 처리
     if (monsterType === MONSTER_TYPE) {
