@@ -68,3 +68,6 @@ export const moveBossHandler = (userId, payload) => {
     //여기서 보스 ...
     //const 
 };
+
+
+//클라이언트에서 몬스터가 이동한 코드대로 서버에서도 이동시키기 => 몬스터 움직임 하나하나를 검증할 필요없음
