@@ -7,7 +7,7 @@ const registerHandler = (io) => {
     let userId = socket.handshake.query.userId;
 
     addUser({ userId, socketId: socket.id });
-    handleConnection(socket, userId, type);
+    handleConnection(socket, userId);
 
     // // wave Handler 등록
     // waveChangeHandler(io, socket);
