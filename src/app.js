@@ -32,8 +32,15 @@ app.use(
   }),
 );
 
+// CORS 설정
+const corsOptions = {
+  origin: 'http://127.0.0.1:8080', // 허용할 클라이언트 도메인
+  methods: ['GET', 'POST', 'DELETE'], // 허용할 HTTP 메서드
+  credentials: true, // 쿠키 및 인증 정보 포함 여부
+};
+
 /* body parsers */
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 /* [2] 정적 파일 서비스 */
