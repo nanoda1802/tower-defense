@@ -26,8 +26,7 @@ let baseHp = 0; // 기지 체력
 let wave = 0;
 
 let towerCost = 0; // 타워 구입 비용
-let monsterLevel = 0; // 몬스터 레벨
-let monsterSpawnInterval = 3000; // 몬스터 생성 주기
+let monsterSpawnInterval = 1500; // 몬스터 생성 주기
 const monsters = [];
 const towers = [];
 let monsterPath;
@@ -129,35 +128,41 @@ function placeNewTower(type, color) {
   }
 }
 /* 몬스터 생성 */
-// 몬스터 식별자를 줄 방법 구상, 스테이지 변경 시 식별자 초기화
+let monsterIndex = 0;
 function spawnMonster() {
+  let currentWave = wave.wave;
   sendEvent(31, {
     timestamp: Date.now(),
-    waveId: 11,
-    monsterId: 101,
-    monsterIndex: monsters.length + 1,
-  }).then((data) => {
-    monsters.push(
-      new Monster(monsterPath, monsterImages, monsterLevel, data.monsterSpeed),
-    );
+    waveId: waveTable[currentWave - 1].id,
+    monsterId: waveTable[currentWave - 1].monster_id,
+    monsterIndex,
+  }).then((res) => {
+    if (res.status === "success") {
+      monsters.push(
+        new Monster(
+          monsterPath,
+          monsterImages[currentWave - 1],
+          res.monsterHealth,
+          res.monsterAttack,
+          res.monsterSpeed,
+          res.monsterGold,
+          res.monsterScore,
+          currentWave,
+        ),
+      );
+      monsterIndex += 1;
+      console.log("저쪽 신사분이 주문하신 인덱스입니다", monsterIndex);
+    }
+    if (monsterIndex === waveTable[currentWave - 1].monster_cnt) {
+      monsterIndex = 0;
+    }
   });
 }
 /* 게임 루프 */
-function gameLoop() {
+async function gameLoop() {
   // [1] 배경과 경로, 웨이브 최신화
   drawMap(monsterPath);
   wave.update();
-  // [2] (수정 예정) 상태 정보 표시
-  ctx.font = "25px Times New Roman";
-  ctx.fillStyle = "skyblue";
-  ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
-  ctx.fillStyle = "white";
-  ctx.fillText(`점수: ${score}`, 100, 100); // 현재 스코어 표시
-  ctx.fillStyle = "yellow";
-  ctx.fillText(`골드: ${userGold}`, 100, 150); // 골드 표시
-  ctx.fillStyle = "black";
-  ctx.fillText(`현재 웨이브: ${wave.wave}`, 100, 200);
-
   // [3] 타워 그리기와 몬스터 공격 판정 체크
   towers.forEach((tower) => {
     tower.draw(ctx);
@@ -168,8 +173,9 @@ function gameLoop() {
         Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
       );
       if (distance < tower.range) {
-        // sendEvent(44, {});
-        tower.attack(monster);
+        const { gold: goldReward, score: scoreReward } = tower.attack(monster);
+        userGold += goldReward;
+        score += scoreReward;
       }
     });
   });
@@ -182,7 +188,7 @@ function gameLoop() {
   for (let i = monsters.length - 1; i >= 0; i--) {
     const monster = monsters[i];
     // [5-1 A] 몬스터가 죽지 않았다면 계속 전진
-    if (monster.hp > 0) {
+    if (monster.currentHp > 0) {
       monster.move();
       // [5-2 A] 몬스터가 HQ에 닿았다면 HQ 체력 감소, 만약 0 이하면 게임 오버 조건 ON
       if (monster.x >= HQ.x) {
@@ -207,8 +213,18 @@ function gameLoop() {
       wave.targetKillCount -= 1;
     }
   }
+  // [7] (수정 예정) 상태 정보 표시
+  ctx.font = "25px Times New Roman";
+  ctx.fillStyle = "skyblue";
+  ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
+  ctx.fillStyle = "white";
+  ctx.fillText(`점수: ${score}`, 100, 100); // 현재 스코어 표시
+  ctx.fillStyle = "yellow";
+  ctx.fillText(`골드: ${userGold}`, 100, 150); // 골드 표시
+  ctx.fillStyle = "black";
+  ctx.fillText(`현재 웨이브: ${wave.wave}`, 100, 200);
 
-  // [7] 프레임 재귀 실행
+  // [8] 프레임 재귀 실행
   requestAnimationFrame(gameLoop);
 }
 
@@ -223,7 +239,7 @@ function initGame() {
   placeHQ(); // 기지 배치
   wave = new Wave(); // 웨이브 생성
   wave.setWave();
-  // [3] 생성 주기에 맞게 몬스터 생성 시작
+  // // [3] 생성 주기에 맞게 몬스터 생성 시작
   setInterval(spawnMonster, monsterSpawnInterval);
   // [4] 게임 실행 상태로 바꾸고 루프 ON
   isInitGame = true;
@@ -235,7 +251,7 @@ function initGame() {
 let userId = null;
 export let monsterTable = null;
 export let waveTable = null;
-let sendEvent = null;
+export let sendEvent = null;
 // [1] 이미지 로드 작업
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
