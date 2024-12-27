@@ -164,9 +164,7 @@ function spawnMonster() {
     monsterId: 101,
     monsterIndex: monsters.length + 1,
   }).then((data) => {
-    monsters.push(
-      new Monster(monsterPath, monsterImages, monsterLevel, data.monsterSpeed),
-    );
+    monsters.push(new Monster(monsterPath, monsterImages, monsterLevel, data.monsterSpeed));
   });
 }
 /* 게임 루프 */
@@ -191,9 +189,7 @@ function gameLoop() {
     tower.updateAttackInterval();
     // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
     monsters.forEach((monster) => {
-      const distance = Math.sqrt(
-        Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
-      );
+      const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
       if (distance < tower.range) {
         // sendEvent(44, {});
         tower.attack(monster);
@@ -261,15 +257,9 @@ Promise.all([
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
   new Promise((resolve) => (jokerImage.onload = resolve)),
-  ...blackTowerImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
-  ...redTowerImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
-  ...monsterImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
+  ...blackTowerImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...redTowerImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...monsterImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
 ]).then(() => {
   /* 서버 접속 코드 (여기도 완성해주세요!) */
   // [1] localStorage에서 JWT 토큰 가져오기
@@ -296,8 +286,8 @@ Promise.all([
       // [2] 서버에서 받은 정보들 변수에 할당
       userId = data.userId;
       monsterTable = data.assets.monsters.data;
+      resolve();
     });
-    resolve();
   }).then(() => {
     if (!isInitGame) {
       initGame();
@@ -399,18 +389,14 @@ function isPositionValid(x, y) {
   const pathRadius = 20; // 경로 이미지 반경
   // 다른 타워와의 충돌 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
     if (distance < towerRadius) {
       return false; // 다른 타워와 겹침
     }
   }
   // 경로와의 충돌 확인
   for (const point of monsterPath) {
-    const distance = Math.sqrt(
-      Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2));
     if (distance < pathRadius) {
       return false; // 경로와 겹침
     }
@@ -434,11 +420,9 @@ function showTowerInfo(tower) {
     towerInfo.style.display = "none";
   });
   // 승급 버튼 누르면 승급
-  document
-    .getElementById("upgradeTowerButton")
-    .addEventListener("click", () => {
-      upgradeTower(tower);
-    });
+  document.getElementById("upgradeTowerButton").addEventListener("click", () => {
+    upgradeTower(tower);
+  });
 }
 /* 타워 정보 창 숨김 함수 */
 function hideTowerInfo() {
@@ -494,9 +478,7 @@ canvas.addEventListener("click", (event) => {
   const curY = Math.floor(y / 100) * 100;
   // 타워 클릭 여부 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
     if (distance < 30) {
       // 타워 반경 내 클릭
       selectedTower = tower; // 타워 선택
