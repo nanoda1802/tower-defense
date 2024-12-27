@@ -14,46 +14,48 @@ const NUM_OF_MONSTERS = 5; // 몬스터 개수
 const NUM_OF_TOWERS = 13;
 
 let userGold = 0; // 유저 골드
-let base; // 기지 객체
+let HQ; // 기지 객체
 let baseHp = 0; // 기지 체력
 
 let towerCost = 0; // 타워 구입 비용
-let numOfInitialTowers = 0; // 초기 타워 개수
 let monsterLevel = 0; // 몬스터 레벨
 let monsterSpawnInterval = 3000; // 몬스터 생성 주기
 const monsters = [];
 const towers = [];
+let monsterPath;
 
 let score = 0; // 게임 점수
 let highScore = 0; // 기존 최고 점수
 let isInitGame = false;
 
-// 이미지 로딩 파트
+/* 이미지 준비 */
+// [1] 배경
 const backgroundImage = new Image();
 backgroundImage.src = "images/background.png";
-
+// [2] 검정 병사
 const blackTowerImages = [];
 for (let i = 1; i <= NUM_OF_TOWERS; i++) {
   const img = new Image();
   img.src = `images/towerB${i}.png`;
   blackTowerImages.push(img);
 }
+// [3] 빨강 병사
 const redTowerImages = [];
 for (let i = 1; i <= NUM_OF_TOWERS; i++) {
   const img = new Image();
   img.src = `images/towerR${i}.png`;
   redTowerImages.push(img);
 }
-
+// [4] 조커
 const jokerImage = new Image();
 jokerImage.src = "images/towerJoker.png";
-
+// [5] HQ
 const baseImage = new Image();
 baseImage.src = "images/hq.png";
-
+// [6] 경로
 const pathImage = new Image();
 pathImage.src = "images/road.png";
-
+// [7] 몬스터
 const monsterImages = [];
 for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
   const img = new Image();
@@ -61,58 +63,26 @@ for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
   monsterImages.push(img);
 }
 
-let monsterPath;
-
-function generateRandomMonsterPath() {
+/* 경로 준비 (배열에 저장) */
+function generatePath() {
   const path = [];
   let currentX = 0;
-  let currentY = Math.floor(Math.random() * 21) + 500; // 500 ~ 520 범위의 y 시작 (캔버스 y축 중간쯤에서 시작할 수 있도록 유도)
-
-  path.push({ x: currentX, y: currentY });
-
-  while (currentX < canvas.width) {
-    currentX += Math.floor(Math.random() * 100) + 50; // 50 ~ 150 범위의 x 증가
-    // x 좌표에 대한 clamp 처리
-    if (currentX > canvas.width) {
-      currentX = canvas.width;
-    }
-
-    currentY += Math.floor(Math.random() * 200) - 100; // -100 ~ 100 범위의 y 변경
-    // y 좌표에 대한 clamp 처리
-    if (currentY < 0) {
-      currentY = 0;
-    }
-    if (currentY > canvas.height) {
-      currentY = canvas.height;
-    }
-
-    path.push({ x: currentX, y: currentY });
-  }
-
-  return path;
-}
-
-function generateStraightMonsterPath() {
-  const path = [];
+  const stepX = 100; // 경로 한칸 x값 증가량
   const fixedY = Math.trunc((canvas.height / 7) * 4);
-  const stepX = 100; // x 값 증가 간격
-  let currentX = 0;
-
   while (currentX <= canvas.width) {
     path.push({ x: currentX, y: fixedY });
     currentX += stepX;
   }
-
-  return path;
+  return path; // 준비된 경로 배열 반환
 }
-
-function initMap() {
-  ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 이미지 그리기
-  drawPath();
+/* 준비된 배경과 경로 캔버스에 그리기 */
+function drawMap(path) {
+  ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 그리기
+  drawPath(path); // 경로 그리기
 }
-
+/* 경로 그리기 (완벽히 이해하지 못함, 다만 지금 직선 경로에선 이 정도 로직은 불필요) */
 function drawPath() {
-  const segmentLength = 20; // 몬스터 경로 세그먼트 길이
+  const segmentLength = 100; // 몬스터 경로 세그먼트 길이
   const imageWidth = 100; // 몬스터 경로 이미지 너비
   const imageHeight = 100; // 몬스터 경로 이미지 높이
   const gap = 5; // 몬스터 경로 이미지 겹침 방지를 위한 간격
@@ -137,7 +107,7 @@ function drawPath() {
     }
   }
 }
-
+/* 경로 이미지 회전시키기 (지금은 직선 경로라 불필요하긴 함) */
 function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.save();
   ctx.translate(x + width / 2, y + height / 2);
@@ -145,36 +115,14 @@ function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.drawImage(image, -width / 2, -height / 2, width, height);
   ctx.restore();
 }
-
-function getRandomPositionNearPath(maxDistance) {
-  // 타워 배치를 위한 몬스터가 지나가는 경로 상에서 maxDistance 범위 내에서 랜덤한 위치를 반환하는 함수!
-  const segmentIndex = Math.floor(Math.random() * (monsterPath.length - 1));
-  const startX = monsterPath[segmentIndex].x;
-  const startY = monsterPath[segmentIndex].y;
-  const endX = monsterPath[segmentIndex + 1].x;
-  const endY = monsterPath[segmentIndex + 1].y;
-
-  const t = Math.random();
-  const posX = startX + t * (endX - startX);
-  const posY = startY + t * (endY - startY);
-
-  const offsetX = (Math.random() - 0.5) * 2 * maxDistance;
-  const offsetY = (Math.random() - 0.5) * 2 * maxDistance;
-
-  return {
-    x: posX + offsetX,
-    y: posY + offsetY,
-  };
+/* HQ 설치 */
+function placeHQ() {
+  // path의 마지막 지점 좌표 -> 랜덤 경로일 시 마지막 위치에 HQ 오도록 구현하신 듯
+  const lastPoint = monsterPath[monsterPath.length - 1];
+  HQ = new Base(lastPoint.x, lastPoint.y, baseHp);
+  HQ.draw(ctx, baseImage);
 }
-
-function placeInitialTowers() {
-  /* 
-    타워를 초기에 배치하는 함수입니다.
-    무언가 빠진 코드가 있는 것 같지 않나요? 
-  */
-  numOfInitialTowers = 0; // 초기 타워 개수가 빠져있어요 ^_^
-}
-
+/* 타워 설치 */
 function placeNewTower(type, color) {
   if (pendingTowerPosition) {
     const { curX: x, curY: y } = pendingTowerPosition;
@@ -207,13 +155,8 @@ function placeNewTower(type, color) {
     alert("타워를 배치할 위치를 먼저 선택하세요.");
   }
 }
-
-function placeBase() {
-  const lastPoint = monsterPath[monsterPath.length - 1];
-  base = new Base(lastPoint.x, lastPoint.y, baseHp);
-  base.draw(ctx, baseImage);
-}
-
+/* 몬스터 생성 */
+// 몬스터 식별자를 줄 방법 구상, 스테이지 변경 시 식별자 초기화
 function spawnMonster() {
   sendEvent(31, {
     timestamp: Date.now(),
@@ -226,12 +169,12 @@ function spawnMonster() {
     );
   });
 }
-
+/* 게임 루프 */
 function gameLoop() {
-  // 렌더링 시에는 항상 배경 이미지부터 그려야 합니다! 그래야 다른 이미지들이 배경 이미지 위에 그려져요!
-  ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 이미지 다시 그리기
-  drawPath(monsterPath); // 경로 다시 그리기
+  // [1] 배경과 경로를 그림
+  drawMap(monsterPath);
 
+  // [2] (수정 예정) 상태 정보 표시
   ctx.font = "25px Times New Roman";
   ctx.fillStyle = "skyblue";
   ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
@@ -242,61 +185,73 @@ function gameLoop() {
   ctx.fillStyle = "black";
   ctx.fillText(`현재 레벨: ${monsterLevel}`, 100, 200); // 최고 기록 표시
 
-  // 타워 그리기 및 몬스터 공격 처리
+  // [3] 타워 그림과 몬스터 공격 판정 체크
   towers.forEach((tower) => {
     tower.draw(ctx);
-    tower.updateCooldown();
-
+    tower.updateAttackInterval();
+    // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
     monsters.forEach((monster) => {
-      // sendEvent(44, {});
       const distance = Math.sqrt(
         Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
       );
       if (distance < tower.range) {
+        // sendEvent(44, {});
         tower.attack(monster);
       }
     });
   });
 
-  // 몬스터가 공격을 했을 수 있으므로 기지 다시 그리기
-  base.draw(ctx, baseImage);
+  // [4] HQ 피격돼서 잔여 체력 변했을 수 있으니 프레임마다 최신화
+  HQ.draw(ctx, baseImage);
 
+  // [5] 몬스터 이동과 게임오버 판정 체크
+  let isDestroyed;
   for (let i = monsters.length - 1; i >= 0; i--) {
     const monster = monsters[i];
+    // [5-1 A] 몬스터가 죽지 않았다면 계속 전진
     if (monster.hp > 0) {
-      const isDestroyed = monster.move(base);
+      monster.move();
+      // [5-2 A] 몬스터가 HQ에 닿았다면 HQ 체력 감소, 만약 0 이하면 게임 오버 조건 ON
+      if (monster.x >= HQ.x) {
+        isDestroyed = monster.collideWith(HQ);
+        monsters.splice(i, 1); // 닿은 몬스터 제거
+      }
+      // [5-3 A] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
       if (isDestroyed) {
         // sendEvent(12, {});
-        /* 게임 오버 */
-        alert("게임 오버. 스파르타 본부를 지키지 못했다...ㅠㅠ");
-        location.reload();
-        // 메인 화면 같은 거 만들어서 거기로 이동 시키기
+        alert("Game Over!!");
+        location.reload(); // 새로고침
+        return; // 루프 종료
       }
+      // [6] 몬스터 그리기
       monster.draw(ctx);
     } else {
-      /* 몬스터가 죽었을 때 */
+      // [5-1 B] 몬스터가 죽었다면 배열에서 제거
       monsters.splice(i, 1);
     }
   }
 
-  requestAnimationFrame(gameLoop); // 지속적으로 다음 프레임에 gameLoop 함수 호출할 수 있도록 함
+  // [7] 프레임 재귀 실행
+  requestAnimationFrame(gameLoop);
 }
-
+/* 게임 첫 실행 */
 function initGame() {
-  sendEvent(11, { timestamp: Date.now() });
   if (isInitGame) {
-    return;
+    return; // [1] 이미 실행된 상태면 즉시 탈출
   }
-
-  monsterPath = generateStraightMonsterPath(); // 몬스터 경로 생성
-  initMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
-  placeInitialTowers(); // 설정된 초기 타워 개수만큼 사전에 타워 배치
-  placeBase(); // 기지 배치
-
-  setInterval(spawnMonster, monsterSpawnInterval); // 설정된 몬스터 생성 주기마다 몬스터 생성
-  gameLoop(); // 게임 루프 최초 실행
+  // [2] 필요한 요소들 준비
+  monsterPath = generatePath(); // 몬스터 경로 준비
+  drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
+  placeHQ(); // 기지 배치
+  // [3] 생성 주기에 맞게 몬스터 생성 시작
+  setInterval(spawnMonster, monsterSpawnInterval);
+  // [4] 게임 실행 상태로 바꾸고 루프 ON
   isInitGame = true;
+  gameLoop();
+  // [5] 서버에 게임 시작 알림
+  sendEvent(11, { timestamp: Date.now() });
 }
+
 let userId = null;
 let monsterTable = null;
 let sendEvent = null;
@@ -317,16 +272,22 @@ Promise.all([
   ),
 ]).then(() => {
   /* 서버 접속 코드 (여기도 완성해주세요!) */
-  let somewhere;
+  // [1] localStorage에서 JWT 토큰 가져오기
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    alert("로그인이 필요합니다!");
+    window.location.href = "login.html"; // 로그인 페이지로 리다이렉트
+    return;
+  }
+
   serverSocket = io("http://localhost:3000", {
-    auth: {
-      CLIENT_VERSION: "1.0.0",
-      token: somewhere, // 토큰이 저장된 어딘가에서 가져와야 합니다!
-    },
-    query: {
-      userId: 101,
-    },
+    auth: { token }, // JWT 토큰 전송
   });
+
+  serverSocket.on("connect", () => {
+    console.log("서버와 소켓 연결 성공");
+  });
+
   /* 서버에서 "connection" 메세지를 받았을 때  */
   new Promise((resolve) => {
     serverSocket.on("connection", (data) => {
@@ -342,6 +303,18 @@ Promise.all([
       initGame();
     }
   });
+
+  serverSocket.on("connect_error", (err) => {
+    if (err.message === "Authentication error") {
+      alert("인증에 실패했습니다. 다시 로그인해주세요.");
+      localStorage.removeItem("accessToken");
+      window.location.href = "login.html";
+    } else {
+      console.error("소켓 연결 실패:", err.message);
+      alert("서버와의 연결에 실패했습니다.");
+    }
+  });
+
   /* 서버에서 "response" 메세지를 받았을 때 */
   serverSocket.on("response", (data) => {
     console.log("response : ", data);
@@ -372,9 +345,6 @@ Promise.all([
     서버의 이벤트들을 받는 코드들은 여기다가 쭉 작성해주시면 됩니다! 
     e.g. serverSocket.on("...", () => {...});
     이 때, 상태 동기화 이벤트의 경우에 아래의 코드를 마지막에 넣어주세요! 최초의 상태 동기화 이후에 게임을 초기화해야 하기 때문입니다! 
-    if (!isInitGame) {
-      initGame();
-    }
   */
 });
 

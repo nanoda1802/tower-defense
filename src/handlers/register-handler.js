@@ -4,7 +4,7 @@ import { handleDisconnect, handlerEvent, handleConnection } from './helper.js';
 
 const registerHandler = (io) => {
   io.on('connection', async (socket) => {
-    let userId = socket.handshake.query.userId;
+    const userId = socket.user?.userId; // JWT에서 추출된 userId
 
     addUser({ userId, socketId: socket.id });
     console.log('!!!register!!!', userId);
@@ -15,7 +15,7 @@ const registerHandler = (io) => {
 
     //Disconnect
     socket.on('disconnect', () => {
-      handleDisconnect(socket);
+      handleDisconnect(socket, userId);
     });
   });
 };
