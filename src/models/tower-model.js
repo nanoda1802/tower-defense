@@ -11,7 +11,7 @@ export const getTower = (userId) => {
 };
 
 export const setTower = (userId, positionX, positionY, type, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr) => {
-  return towers[userId].push({ userId, positionX, positionY, type, isBuff, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr });
+  return towers[userId].push({ userId, positionX, positionY, type, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr });
 };
 
 export const clearTower = (userId) => {
