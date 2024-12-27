@@ -55,8 +55,6 @@ export const gameEnd = (userId, payload) => {
     throw new Error("잘못된 payload 형식");
   }
 
-  const { bosses, monsters, wave } = getGameAssets();
-
   //get score로 최신의 점수를 가져오고 이걸 score랑 비교를 하면 됬다.
   const scores = getscore(userId); // 서버에서의 score를 가져온다.
 
