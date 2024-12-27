@@ -14,7 +14,7 @@ import {
   buffTowerHandler,
   slowTowerHandler,
 } from "./tower-handler.js";
-import { waveChangeHandler } from "./wave-handler.js";
+import { nextWaveHandler } from "./wave-handler.js";
 
 const handlerMappings = {
   11: gameStart, // 해써
