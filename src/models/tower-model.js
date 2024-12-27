@@ -1,5 +1,97 @@
-const towers = {};
+// const towers = {};
 const removeTowers = {};
+
+const towers = {
+  tester: [
+    {
+      positionX: 0,
+      positionY: 0,
+      type: 'pawn',
+      data: {
+        id: 1001,
+        card: '1',
+        color: 'red',
+        attack: 10,
+        attack_speed: 10,
+        range: 5,
+        splash: 2,
+      },
+      isGetBuff: false,
+      buffTowerPos: null,
+      buffTowerArr: [],
+    },
+    {
+      positionX: 1,
+      positionY: 0,
+      type: 'pawn',
+      data: {
+        id: 1002,
+        card: '1',
+        color: 'black',
+        attack: 10,
+        attack_speed: 10,
+        range: 5,
+        splash: 0,
+      },
+      isGetBuff: false,
+      buffTowerPos: null,
+      buffTowerArr: [],
+    },
+    {
+      positionX: 2,
+      positionY: 0,
+      type: 'special',
+      data: {
+        id: 1002,
+        card: 'joker',
+        color: 'none',
+        attack: 10,
+        attack_speed: 10,
+        range: 5,
+        splash: 0,
+      },
+      isGetBuff: false,
+      buffTowerPos: null,
+      buffTowerArr: [],
+    },
+    {
+      positionX: 0,
+      positionY: 1,
+      type: 'special',
+      data: {
+        id: 2001,
+        card: 'J',
+        type: 'buffer',
+        color: 'red',
+        attack: 10,
+        attack_speed: 10,
+        range: 5,
+        splash: 0,
+      },
+      isGetBuff: false,
+      buffTowerPos: null,
+      buffTowerArr: [],
+    },
+    {
+      positionX: 0,
+      positionY: 2,
+      type: 'special',
+      data: {
+        id: 2004,
+        card: 'J',
+        color: 'black',
+        type: 'buffer',
+        attack: 10,
+        attack_speed: 10,
+        range: 5,
+        splash: 0,
+      },
+      isGetBuff: false,
+      buffTowerPos: null,
+      buffTowerArr: [],
+    },
+  ],
+};
 
 //스테이지 초기화
 export const createTower = (userId) => {
@@ -10,8 +102,8 @@ export const getTower = (userId) => {
   return towers[userId];
 };
 
-export const setTower = (userId, positionX, positionY, type, timestamp, data) => {
-  return towers[userId].push({ userId, positionX, positionY, type, timestamp, data });
+export const setTower = (userId, positionX, positionY, type, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr) => {
+  return towers[userId].push({ userId, positionX, positionY, type, isBuff, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr });
 };
 
 export const clearTower = (userId) => {
