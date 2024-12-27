@@ -4,15 +4,20 @@
 
 const aliveMonsters = {};
 
-const deathMonsters = [];
+const deathMonsters = {};
 
-const aliveBosses = [];
+const aliveBosses = {};
 
-const deathBosses = [];
+const deathBosses = {};
 
 export const createAliveMonsters = (userId) => {
   aliveMonsters[userId] = [];
 };
+
+export const createDeathMonsters = (userId) => {
+  deathMonsters[userId] = [];
+};
+
 
 //살아있는 몬스터 데이터 가져오기
 export const getAliveMonsters = (userId) => {
@@ -60,6 +65,16 @@ export const setDeathMonsters = (userId) => {
     monsterGold,
     monsterScore,
   });
+};
+
+
+
+export const createAliveBosses = (userId) => {
+  aliveBosses[userId] = [];
+};
+
+export const createDeathBosses = (userId) => {
+  deathBosses[userId] = [];
 };
 
 //살아있는 보스 데이터 가져오기
