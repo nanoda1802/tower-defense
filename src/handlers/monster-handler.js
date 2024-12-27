@@ -1,5 +1,6 @@
 import { getGameAssets } from "../inits/assets.js";
 import { setAliveMonsters, setAliveBosses } from "../models/monster-model.js";
+import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 
 /* CreateMonsterHandler 31 */
 export const createMonsterHandler = (userId, payload) => {
@@ -7,6 +8,10 @@ export const createMonsterHandler = (userId, payload) => {
     const { monsters, waves } = getGameAssets(); //assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
     const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     //timestamp는 소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
+
+    console.log(calculateMonsterMove(monsterId, monsterIndex, timestamp));
+    console.log(monsterId, monsterIndex, timestamp);
+    
 
     //몬스터 정보 조회
     const monster = monsters.data.find((monster) => monster.id === monsterId);

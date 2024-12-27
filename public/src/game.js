@@ -272,16 +272,22 @@ Promise.all([
   ),
 ]).then(() => {
   /* 서버 접속 코드 (여기도 완성해주세요!) */
-  let somewhere;
+  // [1] localStorage에서 JWT 토큰 가져오기
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    alert("로그인이 필요합니다!");
+    window.location.href = "login.html"; // 로그인 페이지로 리다이렉트
+    return;
+  }
+
   serverSocket = io("http://localhost:3000", {
-    auth: {
-      CLIENT_VERSION: "1.0.0",
-      token: somewhere, // 토큰이 저장된 어딘가에서 가져와야 합니다!
-    },
-    query: {
-      userId: 101,
-    },
+    auth: { token }, // JWT 토큰 전송
   });
+
+  serverSocket.on("connect", () => {
+    console.log("서버와 소켓 연결 성공");
+  });
+
   /* 서버에서 "connection" 메세지를 받았을 때  */
   new Promise((resolve) => {
     serverSocket.on("connection", (data) => {
@@ -297,6 +303,18 @@ Promise.all([
       initGame();
     }
   });
+
+  serverSocket.on("connect_error", (err) => {
+    if (err.message === "Authentication error") {
+      alert("인증에 실패했습니다. 다시 로그인해주세요.");
+      localStorage.removeItem("accessToken");
+      window.location.href = "login.html";
+    } else {
+      console.error("소켓 연결 실패:", err.message);
+      alert("서버와의 연결에 실패했습니다.");
+    }
+  });
+
   /* 서버에서 "response" 메세지를 받았을 때 */
   serverSocket.on("response", (data) => {
     console.log("response : ", data);
