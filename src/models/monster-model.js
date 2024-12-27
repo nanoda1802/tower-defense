@@ -10,10 +10,12 @@ const aliveBosses = {};
 
 const deathBosses = {};
 
+//살아있는 몬스터 배열 만들기
 export const createAliveMonsters = (userId) => {
   aliveMonsters[userId] = [];
 };
 
+//죽은 몬스터 배열 만들기
 export const createDeathMonsters = (userId) => {
   deathMonsters[userId] = [];
 };
@@ -48,20 +50,35 @@ export const setAliveMonsters = (
   });
 };
 
+//살아있는 몬스터 데이터 지우기
+export const removeAliveMonsters = (
+  userId,
+  monsterId,
+  monsterIndex
+) => {
+  aliveMonsters[userId] = aliveMonsters[userId].filter((monster) => monster.monsterId !== monsterId && monster.monsterIndex !== monsterIndex)
+};
+
 //죽은 몬스터 데이터 가져오기
 export const getDeathMonsters = (userId) => {
   return deathMonsters[userId];
 };
 
 //죽은 몬스터 데이터 저장하기
-export const setDeathMonsters = (userId) => {
+export const setDeathMonsters = (
+  userId,
+  timestamp,
+  monsterId,
+  monsterIndex,
+  monsterHealth,
+  monsterGold,
+  monsterScore
+) => {
   return deathMonsters[userId].push({
     timestamp,
     monsterId,
     monsterIndex,
     monsterHealth,
-    monsterAttack,
-    monsterSpeed,
     monsterGold,
     monsterScore,
   });
@@ -69,10 +86,14 @@ export const setDeathMonsters = (userId) => {
 
 
 
+
+//여기부터 보스
+//살아있는 보스 배열 만들기
 export const createAliveBosses = (userId) => {
   aliveBosses[userId] = [];
 };
 
+//죽은 보스 배열 만들기
 export const createDeathBosses = (userId) => {
   deathBosses[userId] = [];
 };

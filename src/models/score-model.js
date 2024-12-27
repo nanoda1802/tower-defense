@@ -9,8 +9,8 @@ export const getscore = (userId) => {
   return score[userId];
 };
 
-export const setscore = (userId, score) => {
-  return score[userId].push({ score });
+export const setscore = (userId, sumscore, score, timestamp ) => {
+  return score[userId].push({ userId, sumscore, changeScore, timestamp });
 };
 
 export const clearscore = (userId) => {
