@@ -270,7 +270,7 @@ export const attackTowerHandler = (userId, payload) => {
   const bossArr = [];
   if (towerInfo.data.color === TOWER_COLOR_BLACK) {
     //단일 공격
-    towerAttack(userId, monsterType, towerInfo, targetInfo, timestamp);
+    attackDamage(userId, monsterType, towerInfo, targetInfo, timestamp);
     monsterType === MONSTER_TYPE ? monsterArr.push(targetInfo) : bossArr.push(targetInfo);
   } else if (towerInfo.data.color === TOWER_COLOR_RED || towerInfo.data.card === 'joker') {
     // 몬스터 생존 정보 조회
