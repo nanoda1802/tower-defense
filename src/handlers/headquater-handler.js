@@ -6,6 +6,8 @@ import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 // 헤드퀸터 충돌 처리
 export const collideHandler = (userid, payload) => {
   const { monsters } = getGameAssets();
+  //monsterId  = 몬스터 종류
+  //monsterIndex = 몬스터 번호
   const { monsterId, monsterIndex, monsterX, timestamp } = payload;
 
   // 몬스터의 현재 위치 계산
