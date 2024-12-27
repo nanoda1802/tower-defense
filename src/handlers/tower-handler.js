@@ -303,7 +303,36 @@ export const attackTowerHandler = (userId, payload) => {
 };
 
 /* 버프 타워 (공격) 45 */
-export const buffTowerHandler = (userId, payload) => {};
+export const buffTowerHandler = (userId, payload) => {
+  const { towerId, towerPositionX, towerPositionY } = payload;
+
+  // 0. 타워 및 몬스터 Type 유효성 검사
+  if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
+    return { status: 'fail', message: 'Invalid tower type' };
+  }
+
+  // 2. 설치한 타워가 맞는지 검증 (위치 포함)
+  const userTowers = getTower(userId);
+  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === towerPositionX && tower.positionY === towerPositionY);
+  if (!towerInfo) {
+    return { status: 'fail', message: 'There is not a tower' };
+  }
+
+  if (userTowers.length === 1) {
+    return { status: 'success', message: 'There are no target towers to buff' };
+  }
+
+  userTowers.forEach((tower) => {
+    if (towerPositionX !== tower.positionX || towerPositionY !== tower.postionY) {
+      const distance = getDistance(towerPositionX, towerPositionY);
+      if (distance < towerInfo.data.range) {
+        //버프 타워 사거리 안
+      }
+    }
+  });
+
+  return { status: 'success' };
+};
 
 /* 감속 타워 (공격) 46 */
 export const slowTowerHandler = (userId, payload) => {};
@@ -390,4 +419,8 @@ const checkSplashAttack = (userId, monster, monsterType, monsterPositionX, monst
     attackDamage(userId, monsterType, towerInfo, monster, timestamp);
     arr.push(monster);
   }
+};
+
+const getDistance = (baseX, baseY, targetX, targetY) => {
+  return Math.sqrt(Math.pow(baseX - targetX, 2) + Math.pow(baseY - targetY, 2));
 };
