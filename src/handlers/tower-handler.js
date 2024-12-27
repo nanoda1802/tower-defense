@@ -30,8 +30,6 @@ export const getTowerHandler = (userId, payload) => {
       return { status: 'fail', message: 'Not enough money' };
     }
 
-    // 6. 타워 생성
-    // setTower(userId, towerId, positionX, positionY);
     // 5. 골드 처리
     const resGold = userGold[userGold.length - 1].gold - cost;
     setGold(userId, resGold, -cost, 'PURCHASE', timestamp);
@@ -82,7 +80,7 @@ export const getTowerHandler = (userId, payload) => {
       }
     }
 
-    setTower(userId, positionX, positionY, type, timestamp, towerInfo);
+    setTower(userId, positionX, positionY, type, timestamp, towerInfo, false, null, []);
     // console.log(getTower(userId));
 
     return {
@@ -114,6 +112,13 @@ export const sellTowerHandler = (userId, payload) => {
       return { status: 'fail', message: 'There is not a tower' };
     }
 
+    /*** (추가)
+     *  CASE1. 버프 타워가 아닌 경우
+     *  - towerInfo 객체에서 buffTowerPos 값의 버프 타워를 찾아 buffTowerArr 목록에서 자기 자신을 지워줘야함
+     *  CASE2. 버프 타워인 경우
+     *  - towerInfo 객체의 buffTowerArr 목록의 타워들을 버프 전 상태로 원복 시켜야함.
+     */
+
     /** 3. 판매처리 (골드)
      *  일반 : 뽑기 금액 / 2 * 카드숫자
      *  특수 : 뽑기 금액 / 2
@@ -144,194 +149,220 @@ export const sellTowerHandler = (userId, payload) => {
 
 /* 타워 승급 43 */
 export const upgradeTowerHandler = (userId, payload) => {
-  const { type, towerId, positionX, positionY, timestamp } = payload;
+  try {
+    const { type, towerId, positionX, positionY, timestamp } = payload;
 
-  // 특수 타워 업글 방지
-  if (type === TOWER_TYPE_SPECIAL) {
-    return { status: 'fail', message: 'Special tower can not upgrade' };
+    // 특수 타워 업글 방지
+    if (type === TOWER_TYPE_SPECIAL) {
+      return { status: 'fail', message: 'Special tower can not upgrade' };
+    }
+
+    // 1. 기준정보 (towerId)
+    const res = checkTowerAsset(type, towerId);
+    if (res) return { status: 'fail', message: res };
+
+    // 2. position(x,y) 위치에 towerId가 존재하는지
+    const userTowers = getTower(userId);
+    const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+    if (!towerInfo) {
+      return { status: 'fail', message: 'There is not a tower' };
+    }
+
+    /** 3. 골드 처리
+     *  일반 : 카드 숫자 * 2
+     *  특수 : 카드 숫자 * 2 (일단 제외)
+     */
+    const userGold = getGold(userId);
+    if (!userGold) {
+      return { status: 'fail', message: 'No gold data for user' };
+    }
+
+    // 나중에 특수 카드도 강화 하게 되면 아래 사용
+    // const x = 2;
+    // const cost = towerInfo.data.card === 'J' ? 11 * x : towerInfo.data.card === 'Q' ? 12 * x  : towerInfo.data.card === 'K' ? 13 * x : Number(towerInfo.data.card) * x;
+    const cost = Number(towerInfo.data.card) * 2;
+
+    // 보유 골드 체크
+    if (userGold[userGold.length - 1].gold < cost) {
+      return { status: 'fail', message: 'Not enough money' };
+    }
+
+    setGold(userId, userGold[userGold.length - 1].gold - cost, cost, 'UPGRADE', timestamp);
+    // console.log(getGold(userId));
+
+    // 4. 타워 업글 처리
+    upgradeTower(userId, towerId, positionX, positionY);
+
+    return {
+      status: 'success',
+      gold: userGold[userGold.length - 1].gold,
+      cost,
+      positionX: towerInfo.positionX,
+      positionY: towerInfo.positionY,
+      type: towerInfo.type,
+      data: towerInfo.data,
+    };
+  } catch (error) {
+    throw new Error('Failed to upgradeTowerHandler !! ' + error.message);
   }
-
-  // 1. 기준정보 (towerId)
-  const res = checkTowerAsset(type, towerId);
-  if (res) return { status: 'fail', message: res };
-
-  // 2. position(x,y) 위치에 towerId가 존재하는지
-  const userTowers = getTower(userId);
-  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
-  if (!towerInfo) {
-    return { status: 'fail', message: 'There is not a tower' };
-  }
-
-  /** 3. 골드 처리
-   *  일반 : 카드 숫자 * 2
-   *  특수 : 카드 숫자 * 2 (일단 제외)
-   */
-  const userGold = getGold(userId);
-  if (!userGold) {
-    return { status: 'fail', message: 'No gold data for user' };
-  }
-
-  // 나중에 특수 카드도 강화 하게 되면 아래 사용
-  // const x = 2;
-  // const cost = towerInfo.data.card === 'J' ? 11 * x : towerInfo.data.card === 'Q' ? 12 * x  : towerInfo.data.card === 'K' ? 13 * x : Number(towerInfo.data.card) * x;
-  const cost = Number(towerInfo.data.card) * 2;
-
-  // 보유 골드 체크
-  if (userGold[userGold.length - 1].gold < cost) {
-    return { status: 'fail', message: 'Not enough money' };
-  }
-
-  setGold(userId, userGold[userGold.length - 1].gold - cost, cost, 'UPGRADE', timestamp);
-  // console.log(getGold(userId));
-
-  // 4. 타워 업글 처리
-  upgradeTower(userId, towerId, positionX, positionY);
-
-  return {
-    status: 'success',
-    gold: userGold[userGold.length - 1].gold,
-    cost,
-    positionX: towerInfo.positionX,
-    positionY: towerInfo.positionY,
-    type: towerInfo.type,
-    data: towerInfo.data,
-  };
 };
 
 /* 공격 타워 (공격) 44 */
 export const attackTowerHandler = (userId, payload) => {
   // const { pawnTowers, specialTowers, monsters, bosses } = getGameAssets();
-  const { towerType, towerId, towerPositionX, towerPositionY, monsterType, monsterId, monsterPositionX, monsterPositionY, timestamp } = payload;
+  try {
+    const { towerType, towerId, towerPositionX, towerPositionY, monsterType, monsterId, monsterPositionX, monsterPositionY, timestamp } = payload;
 
-  // 0. 타워 및 몬스터 Type 유효성 검사
-  if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
-    return { status: 'fail', message: 'Invalid tower type' };
-  }
+    // 0. 타워 및 몬스터 Type 유효성 검사
+    if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
+      return { status: 'fail', message: 'Invalid tower type' };
+    }
 
-  if (monsterType !== MONSTER_TYPE && monsterType !== BOSS_TYPE) {
-    return { status: 'fail', message: 'Invalid monster type' };
-  }
+    if (monsterType !== MONSTER_TYPE && monsterType !== BOSS_TYPE) {
+      return { status: 'fail', message: 'Invalid monster type' };
+    }
 
-  /** 1. 기준정보 체크
-   *  타워, 몬스터 (일반,보스)
-   */
+    /** 1. 기준정보 체크
+     *  타워, 몬스터 (일반,보스)
+     */
 
-  // 타워
-  const towerRes = checkTowerAsset(towerType, towerId);
-  if (towerRes) return { status: 'fail', message: towerRes };
+    // 타워
+    const towerRes = checkTowerAsset(towerType, towerId);
+    if (towerRes) return { status: 'fail', message: towerRes };
 
-  // 몬스터
-  const mosterRes = checkMosterAsset(monsterType, monsterId);
-  if (mosterRes) return { status: 'fail', message: mosterRes };
+    // 몬스터
+    const mosterRes = checkMosterAsset(monsterType, monsterId);
+    if (mosterRes) return { status: 'fail', message: mosterRes };
 
-  // 2. 설치한 타워가 맞는지 검증 (위치 포함)
-  const userTowers = getTower(userId);
-  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === towerPositionX && tower.positionY === towerPositionY);
-  if (!towerInfo) {
-    return { status: 'fail', message: 'There is not a tower' };
-  }
+    // 2. 설치한 타워가 맞는지 검증 (위치 포함)
+    const userTowers = getTower(userId);
+    const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === towerPositionX && tower.positionY === towerPositionY);
+    if (!towerInfo) {
+      return { status: 'fail', message: 'There is not a tower' };
+    }
 
-  // J,Q 타워 체크 (J,Q 는 전용 핸들러가 따로 있음)
-  if (towerInfo.data.card === 'J' || towerInfo.data.card === 'Q') {
-    return { status: 'fail', message: `'${towerInfo.data.card}' tower cannot be processed by this handler` };
-  }
+    // J,Q 타워 체크 (J,Q 는 전용 핸들러가 따로 있음)
+    if (towerInfo.data.card === 'J' || towerInfo.data.card === 'Q') {
+      return { status: 'fail', message: `'${towerInfo.data.card}' tower cannot be processed by this handler` };
+    }
 
-  // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
-  const aliveTargets = monsterType === MONSTER_TYPE ? getAliveMonsters(userId) : getAliveBosses(userId);
-  const targetInfo = aliveTargets.find((target) => target.monsterId === monsterId && target.positionX === monsterPositionX && target.positionY === monsterPositionY);
-  if (!targetInfo) {
+    // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
+    const aliveTargets = monsterType === MONSTER_TYPE ? getAliveMonsters(userId) : getAliveBosses(userId);
+    const targetInfo = aliveTargets.find((target) => target.monsterId === monsterId && target.positionX === monsterPositionX && target.positionY === monsterPositionY);
+    if (!targetInfo) {
+      return {
+        status: 'fail',
+        message: `There is not a ${monsterType === MONSTER_TYPE ? 'moster' : 'boss'}`,
+      };
+    }
+
+    //  4. 공격 사거리 검증
+    const distance = Math.sqrt(Math.pow(towerInfo.positionX - targetInfo.positionX, 2) + Math.pow(towerInfo.positionY - targetInfo.positionY, 2));
+    if (distance >= towerInfo.data.range) {
+      return { status: 'fail', message: 'This is not a valid attack' };
+    }
+
+    // 변경 전 골드 초기화
+    const userGold = getGold(userId);
+    const beforeGold = userGold[userGold.length - 1].gold;
+
+    /*** 5. 공격 처리
+     * 5-1. 체력 감소
+     * 5-2. (조건) 몬스터 체력이 0이면 사망처리 / 골드 획득 처리
+     *
+     * 타워 공격 유형
+     * [색상(일반,특수 - 공통)]
+     * 검정 : 단일 공격
+     * 빨강 : 범위 공격
+     *
+     * [성능]
+     * - 일반 타워: 특수 효과X
+     * - J 타워: 본인 사거리 안에 아군 타워 버프 (다른 핸들러에서 처리)
+     * - Q 타워: 공격력 만큼 몬스터 이동속도 감소 (다른 핸들러에서 처리)
+     * - K 타워: 공격력 사거리 우월
+     * - JOKER 타워: 공격력, 공격속도, 사거리, 공격범위 우월
+     */
+    // 일반 타워 특수 타워
+    const monsterArr = [];
+    const bossArr = [];
+    if (towerInfo.data.color === TOWER_COLOR_BLACK) {
+      //단일 공격
+      attackDamage(userId, monsterType, towerInfo, targetInfo, timestamp);
+      monsterType === MONSTER_TYPE ? monsterArr.push(targetInfo) : bossArr.push(targetInfo);
+    } else if (towerInfo.data.color === TOWER_COLOR_RED || towerInfo.data.card === 'joker') {
+      // 몬스터 생존 정보 조회
+      const alliveMonsters = getAliveMonsters(userId);
+      // const alliveBosses = getAliveBosses(userId);
+
+      alliveMonsters.forEach((monster) => {
+        checkSplashAttack(userId, monster, MONSTER_TYPE, monsterPositionX, monsterPositionY, towerInfo, targetInfo, monsterArr, timestamp);
+      });
+
+      // alliveBosses.forEach((boss) => {
+      //   checkSplashAttack(userId, boss, MONSTER_TYPE, monsterPositionX, monsterPositionY, towerInfo, targetInfo, bossArr, timestamp);
+      // });
+    }
+
     return {
-      status: 'fail',
-      message: `There is not a ${monsterType === MONSTER_TYPE ? 'moster' : 'boss'}`,
+      status: 'success',
+      gold: userGold[userGold.length - 1].gold,
+      cost: userGold[userGold.length - 1].gold - beforeGold,
+      monsters: monsterArr,
+      bosses: bossArr,
     };
+  } catch (error) {
+    throw new Error('Failed to attackTowerHandler !! ' + error.message);
   }
-
-  //  4. 공격 사거리 검증
-  const distance = Math.sqrt(Math.pow(towerInfo.positionX - targetInfo.positionX, 2) + Math.pow(towerInfo.positionY - targetInfo.positionY, 2));
-  if (distance >= towerInfo.data.range) {
-    return { status: 'fail', message: 'This is not a valid attack' };
-  }
-
-  // 변경 전 골드 초기화
-  const userGold = getGold(userId);
-  const beforeGold = userGold[userGold.length - 1].gold;
-
-  /*** 5. 공격 처리
-   * 5-1. 체력 감소
-   * 5-2. (조건) 몬스터 체력이 0이면 사망처리 / 골드 획득 처리
-   *
-   * 타워 공격 유형
-   * [색상(일반,특수 - 공통)]
-   * 검정 : 단일 공격
-   * 빨강 : 범위 공격
-   *
-   * [성능]
-   * - 일반 타워: 특수 효과X
-   * - J 타워: 본인 사거리 안에 아군 타워 버프 (다른 핸들러에서 처리)
-   * - Q 타워: 공격력 만큼 몬스터 이동속도 감소 (다른 핸들러에서 처리)
-   * - K 타워: 공격력 사거리 우월
-   * - JOKER 타워: 공격력, 공격속도, 사거리, 공격범위 우월
-   */
-  // 일반 타워 특수 타워
-  const monsterArr = [];
-  const bossArr = [];
-  if (towerInfo.data.color === TOWER_COLOR_BLACK) {
-    //단일 공격
-    attackDamage(userId, monsterType, towerInfo, targetInfo, timestamp);
-    monsterType === MONSTER_TYPE ? monsterArr.push(targetInfo) : bossArr.push(targetInfo);
-  } else if (towerInfo.data.color === TOWER_COLOR_RED || towerInfo.data.card === 'joker') {
-    // 몬스터 생존 정보 조회
-    const alliveMonsters = getAliveMonsters(userId);
-    // const alliveBosses = getAliveBosses(userId);
-
-    alliveMonsters.forEach((monster) => {
-      checkSplashAttack(userId, monster, MONSTER_TYPE, monsterPositionX, monsterPositionY, towerInfo, targetInfo, monsterArr, timestamp);
-    });
-
-    // alliveBosses.forEach((boss) => {
-    //   checkSplashAttack(userId, boss, MONSTER_TYPE, monsterPositionX, monsterPositionY, towerInfo, targetInfo, bossArr, timestamp);
-    // });
-  }
-
-  return {
-    status: 'success',
-    gold: userGold[userGold.length - 1].gold,
-    cost: userGold[userGold.length - 1].gold - beforeGold,
-    monsters: monsterArr,
-    bosses: bossArr,
-  };
 };
 
 /* 버프 타워 (공격) 45 */
 export const buffTowerHandler = (userId, payload) => {
-  const { towerId, towerPositionX, towerPositionY } = payload;
+  try {
+    const { towerId, positionX, positionY } = payload;
 
-  // 0. 타워 및 몬스터 Type 유효성 검사
-  if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
-    return { status: 'fail', message: 'Invalid tower type' };
-  }
+    /** 1. 기준정보 체크
+     *  타워, 몬스터 (일반,보스)
+     */
 
-  // 2. 설치한 타워가 맞는지 검증 (위치 포함)
-  const userTowers = getTower(userId);
-  const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === towerPositionX && tower.positionY === towerPositionY);
-  if (!towerInfo) {
-    return { status: 'fail', message: 'There is not a tower' };
-  }
+    // 타워
+    const towerRes = checkTowerAsset(towerType, towerId);
+    if (towerRes) return { status: 'fail', message: towerRes };
 
-  if (userTowers.length === 1) {
-    return { status: 'success', message: 'There are no target towers to buff' };
-  }
+    // 2. 위치 + 타워Id + 버프타워 여부 체크
+    const userTowers = getTower(userId);
+    const towerInfo = userTowers.find((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY && tower.data.type === 'buffer');
+    if (!towerInfo) {
+      return { status: 'fail', message: 'There is not a tower' };
+    }
 
-  userTowers.forEach((tower) => {
-    if (towerPositionX !== tower.positionX || towerPositionY !== tower.postionY) {
-      const distance = getDistance(towerPositionX, towerPositionY);
-      if (distance < towerInfo.data.range) {
-        //버프 타워 사거리 안
+    // 3. 생성된 타워가 오직 자기 자신뿐이면 return
+    if (userTowers.length === 1) {
+      return { status: 'success', message: 'There are no target towers to buff' };
+    }
+
+    // 4. 버프 처리
+    for (let i = 0; i < userTowers.length; i++) {
+      // 대상 조건 : 자기 자신이 아닌 타워여야 하고 버프효과를 안받고 있는 타워
+      if ((positionX !== userTowers[i].positionX || positionY !== userTowers[i].positionY) && !userTowers[i].isGetBuff && userTowers[i].data.type !== 'buffer') {
+        const distance = getDistance(positionX, positionY, userTowers[i].positionX, userTowers[i].positionY);
+        // 버프 타워 기준으로 유효한 거리인 타워에게만 버프 효과 부여
+        if (distance < towerInfo.data.range) {
+          userTowers[i].data.attack += 50;
+          userTowers[i].isGetBuff = true; //버프 여부
+          userTowers[i].buffTowerPos = positionX + ',' + positionY; //버프 타워의 좌표 값
+          towerInfo.buffTowerArr.push(userTowers[i]); //버프 타워의 대상 목록에 추가
+
+          // 검정 J 타워는 대상 1개 / 빨강 J 타워는 대상 여러개 (최대 미정)
+          if (towerInfo.data.color === TOWER_COLOR_BLACK) break;
+        }
       }
     }
-  });
 
-  return { status: 'success' };
+    // 버프 받은 타워 목록 return
+    return { status: 'success', towers: towerInfo.buffTowerArr };
+  } catch (error) {
+    throw new Error('Failed to buffTowerHandler !! ' + error.message);
+  }
 };
 
 /* 감속 타워 (공격) 46 */
