@@ -24,8 +24,7 @@ export const handleConnection = async (socket, userId) => {
   createWave(userId);
   createTower(userId);
   clearRemoveTower(userId);
-  createGold(userId);
-  setGold(userId, 100, 0, "start", Date.now());
+  
 
   socket.emit("connection", { userId, assets });
 };
