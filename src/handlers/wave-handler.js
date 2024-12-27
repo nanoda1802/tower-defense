@@ -1,5 +1,11 @@
 import { getGameAssets } from "../inits/assets.js";
-import { createWave, getWave, startWave, validateWave, progressToNextWave } from "../models/wave-model.js";
+import {
+  createWave,
+  getWave,
+  startWave,
+  validateWave,
+  progressToNextWave,
+} from "../models/wave-model.js";
 import { createAliveMonsters } from "../models/monster-model.js";
 import { setGold } from "../models/gold-model.js";
 import { START_MONEY } from "../constants.js";
@@ -46,25 +52,27 @@ export const waveStartHandler = (userId, payload) => {
 /** 다음 웨이브로 진행 처리 */
 export const nextWaveHandler = (userId, payload) => {
   try {
-    const { timestamp } = payload;
+    const { currentWave, nextWave, timestamp } = payload;
 
     // 1. 웨이브 진행 가능 상태 체크
-    const waveValidation = validateWave(userId);
-    if (!waveValidation.valid) {
-      return { status: "fail", message: waveValidation.message };
-    }
-
-    // 2. 현재 웨이브 상태 체크
-    const wave = getWave(userId);
-    if (!wave.isActive) {
+    const waves = getWave(userId);
+    if (!waves) {
       return { status: "fail", message: "현재 진행 중인 웨이브가 없습니다." };
     }
 
-    // 3. 남은 몬스터 체크
-    if (wave.remainingMonsters > 0) {
+    // 2. 현재 웨이브 상태 체크
+    if (currentWave !== waves[waves.length - 1]) {
       return {
         status: "fail",
-        message: `아직 처치해야 할 몬스터가 ${wave.remainingMonsters}마리 남아있습니다.`,
+        message: "보내준 정보가 서버의 웨이브와 일치하지 않습니다!!!!",
+      };
+    }
+
+    // 3. 남은 몬스터 체크
+    if (waves.remainingMonsters > 0) {
+      return {
+        status: "fail",
+        message: `아직 처치해야 할 몬스터가 ${waves.remainingMonsters}마리 남아있습니다.`,
       };
     }
 
@@ -72,7 +80,7 @@ export const nextWaveHandler = (userId, payload) => {
     if (progressToNextWave(userId, timestamp)) {
       return {
         status: "success",
-        waveNumber: wave.currentWaveIndex + 2, // 다음 웨이브 번호
+        waveNumber: waves.currentWaveIndex + 2, // 다음 웨이브 번호
         timestamp: timestamp, // 타임스탬프
       };
     } else {
@@ -137,7 +145,9 @@ export const waveChangeHandler = (io, socket) => {
           return;
         }
         if (result.type === "allComplete") {
-          io.to(userId).emit("wave:allComplete", { timestamp: result.timestamp });
+          io.to(userId).emit("wave:allComplete", {
+            timestamp: result.timestamp,
+          });
         } else {
           io.to(userId).emit("wave:next", result);
         }
@@ -165,21 +175,27 @@ export const waveChangeHandler = (io, socket) => {
       try {
         const wave = getWave(userId);
         if (!wave || !wave.isActive) {
-          io.to(userId).emit("wave:error", { message: "진행 중인 웨이브가 없습니다." });
+          io.to(userId).emit("wave:error", {
+            message: "진행 중인 웨이브가 없습니다.",
+          });
           return;
         }
 
         wave.remainingMonsters--;
 
         if (wave.remainingMonsters <= 0) {
-          const result = nextWaveHandler(userId, { timestamp: payload.timestamp });
+          const result = nextWaveHandler(userId, {
+            timestamp: payload.timestamp,
+          });
           if (result.status === "fail") {
             io.to(userId).emit("wave:error", { message: result.message });
             return;
           }
 
           if (result.type === "allComplete") {
-            io.to(userId).emit("wave:allComplete", { timestamp: result.timestamp });
+            io.to(userId).emit("wave:allComplete", {
+              timestamp: result.timestamp,
+            });
           } else {
             io.to(userId).emit("wave:next", result);
           }
