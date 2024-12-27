@@ -27,7 +27,7 @@ export class Monster {
     this.x += this.speed;
   }
 
-  colideWith(base) {
+  collideWith(base) {
     const isDestroyed = base.takeDamage(this.attackPower);
     this.hp;
     return isDestroyed;
