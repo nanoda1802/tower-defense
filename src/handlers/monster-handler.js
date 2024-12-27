@@ -4,12 +4,10 @@ import {
   getAliveMonsters, 
   removeAliveMonsters,
   setDeathMonsters,
-  setAliveBosses, 
-  getAliveBosses, 
-  createAliveBosses,
-  clearAliveBosses } from "../models/monster-model.js";
+  } from "../models/monster-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
 import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
+import { getscore, setscore } from "../models/score-model.js";
 
 /* CreateMonsterHandler 31 */
 export const createMonsterHandler = (userId, payload) => {
@@ -17,11 +15,6 @@ export const createMonsterHandler = (userId, payload) => {
     const { monsters, waves } = getGameAssets(); //assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
     const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     //timestamp는 소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
-
-
-    console.log(calculateMonsterMove(monsterId, monsterIndex, timestamp));
-    console.log(monsterId, monsterIndex, timestamp);
-    
 
     //몬스터 정보 조회
     const monster = monsters.data.find((monster) => monster.id === monsterId);
@@ -40,8 +33,6 @@ export const createMonsterHandler = (userId, payload) => {
     if (monsterWave.monster_cnt <= monsterIndex) {
       return { status: "fail", message: "Invalid monster index" };
     } //몬스터인덱스가 웨이브 숫자보다 높아지면 에러
-
-    //몬스터 소환 시간 패턴 검증
 
     // 몬스터 정보 저장
     const monsterHealth = monster.health;
@@ -102,6 +93,7 @@ export const createBossHandler = (userId, payload) => {
 /* deathMonsterHandler 33 */
 export const deathMonsterHandler = (userId, payload) => {
   try {
+    const { monsters } = getGameAssets();
     const { aliveMonsters } = getAliveMonsters();
     const { timestamp, monsterId, monsterIndex, monsterHealth, monsterGold, monsterScore } = payload; //payloal 정보
 
@@ -112,7 +104,7 @@ export const deathMonsterHandler = (userId, payload) => {
     }
 
     //죽은 몬스터가 정말 체력이 0이 되었는지 검증
-    if (monsterHealth < 0) {
+    if (monsterHealth > 0) {
       return { status: "fail", message: "monster health is not 0" };
     }
 
@@ -131,8 +123,35 @@ export const deathMonsterHandler = (userId, payload) => {
     );
 
     //골드 증가
+    //현재 보유 골드 조회
     const usergold = getGold(userId);
+
+    //해당 몬스터의 골드량이 맞는지 검증
+    const rightGold = monsters.data.find((monster) => monster.id === monsterId).gold;
+    if(rightGold !== monsterGold) {
+      return { status: "fail", message: "Invalid monster gold" };
+    }
+
     setGold(userId, usergold + monsterGold, monsterGold, "KILL", timestamp);
+
+    
+
+    //점수 증가
+    //현재 보유 점수 조회
+    const userscore = getscore(userId);
+
+    //해당 몬스터의 점수가 맞는지 검증
+    const rightScore = monsters.data.find((monster) => monster.id === monsterId).score;
+    if(rightScore !== monsterScore) {
+      return { status: "fail", message: "Invalid monster score" };
+    }
+
+    setscore(
+      userId, 
+      userscore + monsterScore,
+      monsterScore,
+      timestamp
+    );
 
     return {
       status: "success",
