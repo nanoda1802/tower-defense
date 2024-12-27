@@ -69,8 +69,9 @@
             // 로그인 성공 처리
             alert(result.message); // 성공 메시지 표시
 
-            // JWT 토큰 저장 (예: localStorage에 저장)
+            // JWT 토큰 저장
             localStorage.setItem('accessToken', result.token);
+            localStorage.setItem('email', email); // email도 저장
 
             // index.html로 이동
             window.location.href = 'index.html';
