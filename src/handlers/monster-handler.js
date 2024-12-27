@@ -39,17 +39,7 @@ export const createMonsterHandler = (userId, payload) => {
     const monsterSpeed = monster.speed;
     const monsterGold = monster.gold;
     const monsterScore = monster.score;
-    setAliveMonsters(
-      userId,
-      timestamp,
-      monsterId,
-      monsterIndex,
-      monsterHealth,
-      monsterAttack,
-      monsterSpeed,
-      monsterGold,
-      monsterScore,
-    );
+    setAliveMonsters(userId, timestamp, monsterId, monsterIndex, monsterHealth, monsterAttack, monsterSpeed, monsterGold, monsterScore);
     return {
       status: "success",
       message: "몬스터 생성 성공",
@@ -93,16 +83,7 @@ export const createBossHandler = (userId, payload) => {
     const bossSpeed = boss.speed;
     const bossGold = boss.gold;
     const bossScore = boss.score;
-    setAliveBosses(
-      userId,
-      timestamp,
-      bossId,
-      bossHealth,
-      bossAttack,
-      bossSpeed,
-      bossGold,
-      bossScore,
-    );
+    setAliveBosses(userId, timestamp, bossId, bossHealth, bossAttack, bossSpeed, bossGold, bossScore);
   } catch (error) {
     throw new Error("Failed to create boss !! " + error.message);
   }
