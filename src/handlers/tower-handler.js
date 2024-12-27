@@ -353,20 +353,20 @@ const attackDamage = (userId, monsterType, towerInfo, targetInfo, timestamp) => 
   targetInfo.monsterHealth = targetInfo.monsterHealth - towerInfo.data.attack < 0 ? 0 : targetInfo.monsterHealth - towerInfo.data.attack;
 
   // 몬스터 HP가 0이면
-  if (targetInfo.monsterHealth === 0) {
-    // 골드 획득 처리
-    const userGold = getGold(userId);
-    setGold(userId, userGold[userGold.length - 1].gold + targetInfo.monsterGold, targetInfo.monsterGold, 'KILL', timestamp);
+  // if (targetInfo.monsterHealth === 0) {
+  //   // 골드 획득 처리
+  //   const userGold = getGold(userId);
+  //   setGold(userId, userGold[userGold.length - 1].gold + targetInfo.monsterGold, targetInfo.monsterGold, 'KILL', timestamp);
 
-    // 사망 처리
-    if (monsterType === MONSTER_TYPE) {
-      //일반 몬스터
-      setDeathMonsters(userId);
-    } else {
-      //보스 몬스터
-      setDeathBosses(userId);
-    }
-  }
+  //   // 사망 처리
+  //   if (monsterType === MONSTER_TYPE) {
+  //     //일반 몬스터
+  //     setDeathMonsters(userId);
+  //   } else {
+  //     //보스 몬스터
+  //     setDeathBosses(userId);
+  //   }
+  // }
 };
 
 const checkSplashAttack = (userId, monster, monsterType, monsterPositionX, monsterPositionY, towerInfo, targetInfo, arr, timestamp) => {
