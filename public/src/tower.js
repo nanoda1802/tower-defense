@@ -34,13 +34,17 @@ export class Tower {
   }
 
   attack(monster) {
-    // 타워가 타워 사정거리 내에 있는 몬스터를 공격하는 메소드이며 사정거리에 닿는지 여부는 game.js에서 확인합니다.
+    // sendEvent(44, {});
     if (this.attackInterval <= 0) {
-      monster.hp -= this.attackPower;
+      monster.currentHp -= this.attackPower;
       this.attackInterval = 180; // 3초 쿨타임 (초당 60프레임)
       this.beamDuration = 30; // 광선 지속 시간 (0.5초)
       this.target = monster; // 광선의 목표 설정
     }
+    if (monster.currentHp <= 0) {
+      return { gold: 10, score: 10 }; // res에서 처치 골드랑 점수 받기
+    }
+    return { gold: 0, score: 0 };
   }
 
   updateAttackInterval() {
