@@ -1,14 +1,14 @@
-import { Base } from "./base.js";
-import { Monster } from "./monster.js";
-import { Tower } from "./tower.js";
+import { Base } from './base.js';
+import { Monster } from './monster.js';
+import { Tower } from './tower.js';
 
 /* 
   어딘가에 엑세스 토큰이 저장이 안되어 있다면 로그인을 유도하는 코드를 여기에 추가해주세요!
 */
 
 export let serverSocket; // 서버 웹소켓 객체
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
 const NUM_OF_MONSTERS = 5; // 몬스터 개수
 const NUM_OF_TOWERS = 13;
@@ -30,7 +30,7 @@ let isInitGame = false;
 
 // 이미지 로딩 파트
 const backgroundImage = new Image();
-backgroundImage.src = "images/background.png";
+backgroundImage.src = 'images/background.png';
 
 const blackTowerImages = [];
 for (let i = 1; i <= NUM_OF_TOWERS; i++) {
@@ -46,13 +46,13 @@ for (let i = 1; i <= NUM_OF_TOWERS; i++) {
 }
 
 const jokerImage = new Image();
-jokerImage.src = "images/towerJoker.png";
+jokerImage.src = 'images/towerJoker.png';
 
 const baseImage = new Image();
-baseImage.src = "images/hq.png";
+baseImage.src = 'images/hq.png';
 
 const pathImage = new Image();
-pathImage.src = "images/road.png";
+pathImage.src = 'images/road.png';
 
 const monsterImages = [];
 for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
@@ -189,14 +189,14 @@ function placeNewTower(type, color) {
       const towerNum = data.id;
       // 타워 생성
       let towerImage;
-      if (color === "black") {
+      if (color === 'black') {
         towerImage = blackTowerImages[towerNum - 1001];
-      } else if (color === "red") {
+      } else if (color === 'red') {
         towerImage = redTowerImages[towerNum - 1000];
       } else {
         towerImage = jokerImage;
       }
-      towerCost = type === "pawn" ? 10 : 30;
+      towerCost = type === 'pawn' ? 10 : 30;
       const tower = new Tower(x, y, towerCost, towerImage, towerNum, type);
       towers.push(tower);
       tower.draw(ctx);
@@ -204,7 +204,7 @@ function placeNewTower(type, color) {
       pendingTowerPosition = null;
     });
   } else {
-    alert("타워를 배치할 위치를 먼저 선택하세요.");
+    alert('타워를 배치할 위치를 먼저 선택하세요.');
   }
 }
 
@@ -221,9 +221,7 @@ function spawnMonster() {
     monsterId: 101,
     monsterIndex: monsters.length + 1,
   }).then((data) => {
-    monsters.push(
-      new Monster(monsterPath, monsterImages, monsterLevel, data.monsterSpeed),
-    );
+    monsters.push(new Monster(monsterPath, monsterImages, monsterLevel, data.monsterSpeed));
   });
 }
 
@@ -232,14 +230,14 @@ function gameLoop() {
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 이미지 다시 그리기
   drawPath(monsterPath); // 경로 다시 그리기
 
-  ctx.font = "25px Times New Roman";
-  ctx.fillStyle = "skyblue";
+  ctx.font = '25px Times New Roman';
+  ctx.fillStyle = 'skyblue';
   ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
-  ctx.fillStyle = "white";
+  ctx.fillStyle = 'white';
   ctx.fillText(`점수: ${score}`, 100, 100); // 현재 스코어 표시
-  ctx.fillStyle = "yellow";
+  ctx.fillStyle = 'yellow';
   ctx.fillText(`골드: ${userGold}`, 100, 150); // 골드 표시
-  ctx.fillStyle = "black";
+  ctx.fillStyle = 'black';
   ctx.fillText(`현재 레벨: ${monsterLevel}`, 100, 200); // 최고 기록 표시
 
   // 타워 그리기 및 몬스터 공격 처리
@@ -268,7 +266,7 @@ function gameLoop() {
       if (isDestroyed) {
         // sendEvent(12, {});
         /* 게임 오버 */
-        alert("게임 오버. 스파르타 본부를 지키지 못했다...ㅠㅠ");
+        alert('게임 오버. 스파르타 본부를 지키지 못했다...ㅠㅠ');
         location.reload();
         // 메인 화면 같은 거 만들어서 거기로 이동 시키기
       }
@@ -306,32 +304,32 @@ Promise.all([
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
   new Promise((resolve) => (jokerImage.onload = resolve)),
-  ...blackTowerImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
-  ...redTowerImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
-  ...monsterImages.map(
-    (img) => new Promise((resolve) => (img.onload = resolve)),
-  ),
+  ...blackTowerImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...redTowerImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...monsterImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
 ]).then(() => {
   /* 서버 접속 코드 (여기도 완성해주세요!) */
-  let somewhere;
-  serverSocket = io("http://localhost:3000", {
-    auth: {
-      CLIENT_VERSION: "1.0.0",
-      token: somewhere, // 토큰이 저장된 어딘가에서 가져와야 합니다!
-    },
-    query: {
-      userId: 101,
-    },
+  // [1] localStorage에서 JWT 토큰 가져오기
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    alert('로그인이 필요합니다!');
+    window.location.href = 'login.html'; // 로그인 페이지로 리다이렉트
+    return;
+  }
+
+  serverSocket = io('http://localhost:3000', {
+    auth: { token }, // JWT 토큰 전송
   });
+
+  serverSocket.on('connect', () => {
+    console.log('서버와 소켓 연결 성공');
+  });
+
   /* 서버에서 "connection" 메세지를 받았을 때  */
   new Promise((resolve) => {
-    serverSocket.on("connection", (data) => {
+    serverSocket.on('connection', (data) => {
       // [1] 서버에서 받은 데이터 출력
-      console.log("connection: ", data);
+      console.log('connection: ', data);
       // [2] 서버에서 받은 정보들 변수에 할당
       userId = data.userId;
       monsterTable = data.assets.monsters.data;
@@ -342,9 +340,21 @@ Promise.all([
       initGame();
     }
   });
+
+  serverSocket.on('connect_error', (err) => {
+    if (err.message === 'Authentication error') {
+      alert('인증에 실패했습니다. 다시 로그인해주세요.');
+      localStorage.removeItem('accessToken');
+      window.location.href = 'login.html';
+    } else {
+      console.error('소켓 연결 실패:', err.message);
+      alert('서버와의 연결에 실패했습니다.');
+    }
+  });
+
   /* 서버에서 "response" 메세지를 받았을 때 */
-  serverSocket.on("response", (data) => {
-    console.log("response : ", data);
+  serverSocket.on('response', (data) => {
+    console.log('response : ', data);
   });
 
   /* 클라이언트에서 서버로 이벤트 보내기 위한 함수 */
@@ -352,18 +362,18 @@ Promise.all([
   // [1-2] 이벤트에 대한 정보 알려주기 위해 payload 매개변수 받음
   sendEvent = (handlerId, payload) => {
     return new Promise((resolve, reject) => {
-      serverSocket.emit("event", {
-        clientVersion: "1.0.0",
+      serverSocket.emit('event', {
+        clientVersion: '1.0.0',
         userId,
         handlerId,
         payload,
       });
       // [2] 해당 메세지에 대한 응답 바로 받는 일회성 소켓
-      serverSocket.once("response", (data) => {
+      serverSocket.once('response', (data) => {
         if (data.handlerId === handlerId) {
           resolve(data);
         } else {
-          reject(new Error("응답이 요상해요?!"));
+          reject(new Error('응답이 요상해요?!'));
         }
       });
     });
@@ -379,46 +389,46 @@ Promise.all([
 });
 
 function createButton(text, top) {
-  const btn = document.createElement("button");
+  const btn = document.createElement('button');
   btn.textContent = text;
-  btn.style.position = "absolute";
+  btn.style.position = 'absolute';
   btn.style.top = `${top}px`;
-  btn.style.right = "10px";
-  btn.style.padding = "10px 20px";
-  btn.style.fontSize = "16px";
-  btn.style.cursor = "pointer";
+  btn.style.right = '10px';
+  btn.style.padding = '10px 20px';
+  btn.style.fontSize = '16px';
+  btn.style.cursor = 'pointer';
   return btn;
 }
 
-const buyBlackButton = createButton("검정 병사 구입", 10);
+const buyBlackButton = createButton('검정 병사 구입', 10);
 document.body.appendChild(buyBlackButton);
-buyBlackButton.addEventListener("click", () => {
-  placeNewTower("pawn", "black");
+buyBlackButton.addEventListener('click', () => {
+  placeNewTower('pawn', 'black');
 });
 
-const buyRedButton = createButton("빨강 병사 구입", 50);
+const buyRedButton = createButton('빨강 병사 구입', 50);
 document.body.appendChild(buyRedButton);
-buyRedButton.addEventListener("click", () => {
-  placeNewTower("pawn", "red");
+buyRedButton.addEventListener('click', () => {
+  placeNewTower('pawn', 'red');
 });
 
-const getSpecialButton = createButton("특수 병사 뽑기", 90);
+const getSpecialButton = createButton('특수 병사 뽑기', 90);
 document.body.appendChild(getSpecialButton);
-getSpecialButton.addEventListener("click", () => {
+getSpecialButton.addEventListener('click', () => {
   // sendEvent로 가챠 진행 후 그 응답을 placeNewTower의 매개변수로 투입
-  placeNewTower("special", "none");
+  placeNewTower('special', 'none');
 });
 
 /* 타워 정보 보여주는 div 생성 */
-const towerInfoPanel = document.createElement("div");
-towerInfoPanel.id = "towerInfoPanel";
-towerInfoPanel.style.position = "absolute";
-towerInfoPanel.style.right = "10px";
-towerInfoPanel.style.top = "60px";
-towerInfoPanel.style.padding = "10px";
-towerInfoPanel.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-towerInfoPanel.style.color = "white";
-towerInfoPanel.style.display = "none"; // 기본적으로 숨김
+const towerInfoPanel = document.createElement('div');
+towerInfoPanel.id = 'towerInfoPanel';
+towerInfoPanel.style.position = 'absolute';
+towerInfoPanel.style.right = '10px';
+towerInfoPanel.style.top = '60px';
+towerInfoPanel.style.padding = '10px';
+towerInfoPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+towerInfoPanel.style.color = 'white';
+towerInfoPanel.style.display = 'none'; // 기본적으로 숨김
 document.body.appendChild(towerInfoPanel);
 
 /* 클릭 위치에 타워나 경로가 있는지 확인하는 함수 */
@@ -429,18 +439,14 @@ function isPositionValid(x, y) {
   const pathRadius = 20; // 경로 이미지 반경
   // 다른 타워와의 충돌 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
     if (distance < towerRadius) {
       return false; // 다른 타워와 겹침
     }
   }
   // 경로와의 충돌 확인
   for (const point of monsterPath) {
-    const distance = Math.sqrt(
-      Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2));
     if (distance < pathRadius) {
       return false; // 경로와 겹침
     }
@@ -449,8 +455,8 @@ function isPositionValid(x, y) {
 }
 /* 타워 정보 창 보여주는 함수*/
 function showTowerInfo(tower) {
-  const towerInfo = document.getElementById("towerInfoPanel");
-  towerInfo.style.display = "block";
+  const towerInfo = document.getElementById('towerInfoPanel');
+  towerInfo.style.display = 'block';
   towerInfo.innerHTML = `
     <p>타워 위치: (${tower.x}, ${tower.y})</p>
     <p>타워 공격력: ${tower.attackPower}</p>
@@ -459,20 +465,18 @@ function showTowerInfo(tower) {
     <button id="upgradeTowerButton">승급</button>
   `;
   // 판매 버튼 누르면 판매
-  document.getElementById("sellTowerButton").addEventListener("click", () => {
+  document.getElementById('sellTowerButton').addEventListener('click', () => {
     sellTower(tower);
-    towerInfo.style.display = "none";
+    towerInfo.style.display = 'none';
   });
   // 승급 버튼 누르면 승급
-  document
-    .getElementById("upgradeTowerButton")
-    .addEventListener("click", () => {
-      upgradeTower(tower);
-    });
+  document.getElementById('upgradeTowerButton').addEventListener('click', () => {
+    upgradeTower(tower);
+  });
 }
 /* 타워 정보 창 숨김 함수 */
 function hideTowerInfo() {
-  towerInfoPanel.style.display = "none";
+  towerInfoPanel.style.display = 'none';
 }
 /* 타워 판매 함수 */
 function sellTower(tower) {
@@ -488,7 +492,7 @@ function sellTower(tower) {
       userGold += res.price;
       towers.splice(index, 1); // 타워 목록에서 제거
       hideTowerInfo(); // 정보 패널 숨김
-      console.log("타워 판매됨:", tower);
+      console.log('타워 판매됨:', tower);
     }
   });
 }
@@ -505,10 +509,10 @@ function upgradeTower(tower) {
       userGold -= res.cost; // 승급 비용 차감
       tower.attackPower += 10; // 공격력 증가
       tower.range += 20; // 범위 증가
-      console.log("타워 승급됨:", tower);
+      console.log('타워 승급됨:', tower);
       showTowerInfo(tower); // 승급 후 갱신된 정보 표시
     } else {
-      alert("골드가 부족합니다!");
+      alert('골드가 부족합니다!');
     }
   });
 }
@@ -516,7 +520,7 @@ function upgradeTower(tower) {
 /* 원하는 위치에 타워 생성 */
 let selectedTower = null; // 현재 선택된 타워
 let pendingTowerPosition = null; // 생성 대기 중인 타워 위치
-canvas.addEventListener("click", (event) => {
+canvas.addEventListener('click', (event) => {
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
@@ -524,9 +528,7 @@ canvas.addEventListener("click", (event) => {
   const curY = Math.floor(y / 100) * 100;
   // 타워 클릭 여부 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(
-      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
-    );
+    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
     if (distance < 30) {
       // 타워 반경 내 클릭
       selectedTower = tower; // 타워 선택
