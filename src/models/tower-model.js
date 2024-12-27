@@ -1,24 +1,5 @@
-// const towers = {};
-// const removeTowers = {};
-const towers = {
-  tester: [
-    {
-      positionX: 0,
-      positionY: 0,
-      type: 'pawn',
-      data: {
-        id: 1001,
-        card: '1',
-        color: 'red',
-        attack: 10,
-        attack_speed: 10,
-        range: 5,
-        splash: 10,
-      },
-    },
-  ],
-};
-const removeTowers = { tester: [] };
+const towers = {};
+const removeTowers = {};
 
 //스테이지 초기화
 export const createTower = (userId) => {
