@@ -4,6 +4,9 @@ import { getTower, setTower, removeTower, upgradeTower, getRemoveTower } from '.
 import { getGold, setGold } from '../models/gold-model.js';
 import { getAliveBosses, getAliveMonsters, setDeathMonsters, setDeathBosses, getDeathMonsters, getDeathBosses } from '../models/monster-model.js';
 
+const TOWER_TYPE_BUFF = 'buffer';
+const BUFF_VALUE = 50;
+
 export const getTowerHandler = (userId, payload) => {
   try {
     const { pawnTowers, specialTowers } = getGameAssets();
@@ -112,12 +115,26 @@ export const sellTowerHandler = (userId, payload) => {
       return { status: 'fail', message: 'There is not a tower' };
     }
 
-    /*** (추가)
-     *  CASE1. 버프 타워가 아닌 경우
+    /*** (추가) 버프타워용
+     *  CASE1. 버프 타워가 아닌 경우 (버프 적용된 일반 타워만)
      *  - towerInfo 객체에서 buffTowerPos 값의 버프 타워를 찾아 buffTowerArr 목록에서 자기 자신을 지워줘야함
      *  CASE2. 버프 타워인 경우
      *  - towerInfo 객체의 buffTowerArr 목록의 타워들을 버프 전 상태로 원복 시켜야함.
      */
+    // if (TOWER_TYPE_BUFF !== towerInfo.data.type) {
+    //   if (towerInfo.isGetBuff) {
+    //     const buffTowerPos = towerInfo.buffTowerPos.split(',');
+    //     const buffTower = userTowers.find((tower) => tower.positionX === buffTowerPos[0] && tower.positionY === buffTowerPos[1]);
+    //     const index = buffTower.buffTowerArr.findIndex((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+    //     if (index !== -1) {
+    //       return buffTower.buffTowerArr.splice(index, 1)[0];
+    //     }
+    //   }
+    // } else {
+    //   towerInfo.buffTowerArr.forEach((tower) => {
+    //     changeBuffStatus(tower, false, null);
+    //   });
+    // }
 
     /** 3. 판매처리 (골드)
      *  일반 : 뽑기 금액 / 2 * 카드숫자
@@ -128,7 +145,6 @@ export const sellTowerHandler = (userId, payload) => {
       return { status: 'fail', message: 'No gold data for user' };
     }
     const price = towerInfo.type === TOWER_TYPE_PAWN ? (PAWN_TOWER_COST / 2) * Number(towerInfo.data.card) : SPECIAL_TOWER_COST / 2;
-
     setGold(userId, userGold[userGold.length - 1].gold + price, price, 'SELL', timestamp);
     // console.log(getGold(userId));
 
@@ -142,6 +158,12 @@ export const sellTowerHandler = (userId, payload) => {
       gold: userGold[userGold.length - 1].gold,
       price,
     };
+    // return {
+    //   status: 'success',
+    //   gold: userGold[userGold.length - 1].gold,
+    //   price,
+    //   towers: getTower(userId),
+    // };
   } catch (error) {
     throw new Error('Failed to sellTowerHandler !! ' + error.message);
   }
@@ -325,7 +347,7 @@ export const buffTowerHandler = (userId, payload) => {
      */
 
     // 타워
-    const towerRes = checkTowerAsset(towerType, towerId);
+    const towerRes = checkTowerAsset(TOWER_TYPE_SPECIAL, towerId);
     if (towerRes) return { status: 'fail', message: towerRes };
 
     // 2. 위치 + 타워Id + 버프타워 여부 체크
@@ -347,9 +369,7 @@ export const buffTowerHandler = (userId, payload) => {
         const distance = getDistance(positionX, positionY, userTowers[i].positionX, userTowers[i].positionY);
         // 버프 타워 기준으로 유효한 거리인 타워에게만 버프 효과 부여
         if (distance < towerInfo.data.range) {
-          userTowers[i].data.attack += 50;
-          userTowers[i].isGetBuff = true; //버프 여부
-          userTowers[i].buffTowerPos = positionX + ',' + positionY; //버프 타워의 좌표 값
+          changeBuffStatus(userTowers[i], true, positionX + ',' + positionY);
           towerInfo.buffTowerArr.push(userTowers[i]); //버프 타워의 대상 목록에 추가
 
           // 검정 J 타워는 대상 1개 / 빨강 J 타워는 대상 여러개 (최대 미정)
@@ -436,6 +456,7 @@ const attackDamage = (userId, monsterType, towerInfo, targetInfo, timestamp) => 
   // }
 };
 
+// 범위 공격 처리 함수
 const checkSplashAttack = (userId, monster, monsterType, monsterPositionX, monsterPositionY, towerInfo, targetInfo, arr, timestamp) => {
   if (monster.positionX !== monsterPositionX || monster.positionY !== monsterPositionY) {
     //타워의 공격 대상 기준으로 타워의 범위 수치만큼 거리안에 있는 몬스터를 찾는다
@@ -452,6 +473,14 @@ const checkSplashAttack = (userId, monster, monsterType, monsterPositionX, monst
   }
 };
 
+//거리 계산 (좌표 기준)
 const getDistance = (baseX, baseY, targetX, targetY) => {
   return Math.sqrt(Math.pow(baseX - targetX, 2) + Math.pow(baseY - targetY, 2));
+};
+
+//버프 상태 변경 함수
+const changeBuffStatus = (towerInfo, isBuff, positionXY) => {
+  isBuff ? (towerInfo.data.attack += BUFF_VALUE) : (towerInfo.data.attack -= BUFF_VALUE);
+  towerInfo.isGetBuff = isBuff; //버프 여부
+  towerInfo.buffTowerPos = positionXY; //버프 타워의 좌표 값
 };
