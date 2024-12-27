@@ -1,5 +1,14 @@
 import { getGameAssets } from "../inits/assets.js";
-import { setAliveMonsters, setAliveBosses } from "../models/monster-model.js";
+import { 
+  setAliveMonsters, 
+  getAliveMonsters, 
+  removeAliveMonsters,
+  setDeathMonsters,
+  setAliveBosses, 
+  getAliveBosses, 
+  createAliveBosses,
+  clearAliveBosses } from "../models/monster-model.js";
+import { getGold, setGold } from "../models/gold-model.js";
 import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 
 /* CreateMonsterHandler 31 */
@@ -8,6 +17,7 @@ export const createMonsterHandler = (userId, payload) => {
     const { monsters, waves } = getGameAssets(); //assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
     const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     //timestamp는 소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
+
 
     console.log(calculateMonsterMove(monsterId, monsterIndex, timestamp));
     console.log(monsterId, monsterIndex, timestamp);
@@ -108,18 +118,57 @@ export const createBossHandler = (userId, payload) => {
   }
 };
 
-/* MoveMonsterHandler 33 */
-export const moveMonsterHandler = (userId, payload) => {
-  const { monsters } = getGameAssets(); //assets파일의 monsters 정보 불러오기
-  const { timestamp, monsterIndex, x, y } = payload; //payloal 정보
-  //몬스터 번호, 이동한 좌표(이동 전도 가져와도됨)
+/* deathMonsterHandler 33 */
+export const deathMonsterHandler = (userId, payload) => {
+  try {
+    const { aliveMonsters } = getAliveMonsters();
+    const { timestamp, monsterId, monsterIndex, monsterHealth, monsterGold, monsterScore } = payload; //payloal 정보
 
-  //여기서 몬스터의 스피드가 맞는지, 제시된 길을 벗어나지 않는지 검증하기만 하면 될듯!
-  //const ..
+     //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
+    const monster = aliveMonsters.find((monster) => monster.id === monsterId && monster.index === monsterIndex);
+    if (!monster) {
+      return { status: "fail", message: "Invalid monster ID or index" };
+    }
+
+    //죽은 몬스터가 정말 체력이 0이 되었는지 검증
+    if (monsterHealth < 0) {
+      return { status: "fail", message: "monster health is not 0" };
+    }
+
+    //살아있는 몬스터 데이터 삭제
+    removeAliveMonsters(userId, monsterId, monsterIndex);
+    
+    //죽은 몬스터 데이터 저장
+    setDeathMonsters(
+      userId,
+      timestamp,
+      monsterId,
+      monsterIndex,
+      monsterHealth,
+      monsterGold,
+      monsterScore,
+    );
+
+    //골드 증가
+    const usergold = getGold(userId);
+    setGold(userId, usergold + monsterGold, monsterGold, "KILL", timestamp);
+
+    return {
+      status: "success",
+      message: "몬스터 죽음",
+      monsterHealth,
+      monsterGold,
+      monsterScore,
+      handlerId: 33,
+    };
+  } catch (error) {
+    throw new Error("Failed to death monster !! " + error.message);
+  }
+
 };
 
-/* MoveBossHandler 34 */
-export const moveBossHandler = (userId, payload) => {
+/* deathBossHandler 34 */
+export const deathBossHandler = (userId, payload) => {
   const { bosses } = getGameAssets(); //assets파일의 monsters 정보 불러오기
   const { timestamp, bossId, x, y } = payload; //payloal 정보
   //보스 ID, 이동한 좌표(이동 전도 가져와도됨)
