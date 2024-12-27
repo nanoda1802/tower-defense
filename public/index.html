@@ -36,27 +36,50 @@
   <body>
     <div class="button-container">
       <h1 style="color: white">내일배움캠프 Node.js 트랙 타워 디펜스 게임</h1>
-      <button id="registerButton">회원가입</button>
-      <button id="loginButton">로그인</button>
+      <div id="auth-buttons"></div>
+      <!-- <button id="registerButton">회원가입</button>
+      <button id="loginButton">로그인</button> -->
       <button id="playButton">게임 플레이</button>
     </div>
     <canvas id="gameCanvas" width="1200" height="700"></canvas>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script type="module">
-      document
-        .getElementById("registerButton")
-        .addEventListener("click", () => {
-          window.location.href = "register.html";
+      // 로그인 상태 확인 및 버튼 렌더링
+      const authButtons = document.getElementById('auth-buttons');
+      const token = localStorage.getItem('accessToken');
+
+      if (token) {
+        // 로그인 상태인 경우 로그아웃 버튼 표시
+        const logoutButton = document.createElement('button');
+        logoutButton.textContent = '로그아웃';
+        logoutButton.addEventListener('click', () => {
+          localStorage.removeItem('accessToken'); // 토큰 삭제
+          alert('로그아웃 되었습니다.');
+          window.location.reload(); // 페이지 새로고침
+        });
+        authButtons.appendChild(logoutButton);
+      } else {
+        // 비로그인 상태인 경우 로그인/회원가입 버튼 표시
+        const loginButton = document.createElement('button');
+        loginButton.textContent = '로그인';
+        loginButton.addEventListener('click', () => {
+          window.location.href = 'login.html'; // 로그인 페이지로 이동
         });
 
-      document.getElementById("loginButton").addEventListener("click", () => {
-        window.location.href = "login.html";
-      });
+        const registerButton = document.createElement('button');
+        registerButton.textContent = '회원가입';
+        registerButton.addEventListener('click', () => {
+          window.location.href = 'register.html'; // 회원가입 페이지로 이동
+        });
 
-      document.getElementById("playButton").addEventListener("click", () => {
-        document.querySelector(".button-container").style.display = "none";
-        document.getElementById("gameCanvas").style.display = "block";
-        import("./src/game.js");
+        authButtons.appendChild(loginButton);
+        authButtons.appendChild(registerButton);
+      }
+
+      document.getElementById('playButton').addEventListener('click', () => {
+        document.querySelector('.button-container').style.display = 'none';
+        document.getElementById('gameCanvas').style.display = 'block';
+        import('./src/game.js');
       });
     </script>
   </body>
