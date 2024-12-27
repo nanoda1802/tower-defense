@@ -15,8 +15,10 @@ export const gameStart = (userId, payload) => {
   clearWave(userId);
   // 첫 번째 스테이지(id: 1)로 설정하고 시작 시간 기록
   // setWave(userId, wave.data[0].id, payload.timestamp);
-
+  // 골드 초기화
+  clearGold(userId);
   // 초기 골드 설정 지금은 편의상 100으로 설정
+  setGold(userId, 100, 0, "start", Date.now());
   console.log("웨 않됨???????", userId);
   //타워 초기화
   clearTower(userId);
