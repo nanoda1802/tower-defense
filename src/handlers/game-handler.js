@@ -5,7 +5,7 @@ import { clearTower, clearRemoveTower } from "../models/tower-model.js";
 import { getDeathMonsters, getDeathBosses } from "../models/monster-model.js";
 import { clearscore } from "../models/score-model.js";
 import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
-
+import { createAliveMonsters, createDeathMonsters, createAliveBosses, createDeathBosses } from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -28,6 +28,14 @@ export const gameStart = (userId, payload) => {
   clearHeadquater(userId);
   //hQ 채력 100hp
   setHeadquater(userId, 100, payload.timestamp);
+  //생존한 몬스터 초기화
+  createAliveMonsters(userId);
+  //죽은 몬스터 초기화
+  createDeathMonsters(userId);
+  //생존한 보스 초기화
+  createAliveBosses(userId);
+  //죽은 보스 초기화
+  createDeathBosses(userId);
   return { status: "success", message: "Game Started!!" };
 };
 
