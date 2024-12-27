@@ -15,7 +15,7 @@ export const gameStart = (userId, payload) => {
   clearWave(userId);
   // 첫 번째 스테이지(id: 1)로 설정하고 시작 시간 기록
   // setWave(userId, wave.data[0].id, payload.timestamp);
-  
+
   // 초기 골드 설정 지금은 편의상 100으로 설정
   console.log("웨 않됨???????", userId);
   //타워 초기화
@@ -54,6 +54,10 @@ export const gameEnd = (userId, payload) => {
   let bossKillScore = 0;
   let allKillScore = 0;
   let leftGoldScore = 0;
+
+  // 지금 get으로 받아온 데이터가 객체{} 형태로 나오는데 이게 모든 몬스터가 언제 죽었는지 로그 형식으로 남을수 도 있다.
+  // 보스도 마찬가지이다.
+
   // 몬스터 처치 수 계산
   const monsterKill = getDeathMonsters();
   //boss kill도 마찬가지
