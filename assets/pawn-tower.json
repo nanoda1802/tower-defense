@@ -5,17 +5,19 @@
     {
       "id": 1001,
       "color": "red",
+      "type": "pawn",
       "attack": 10,
       "attack_speed": 10,
-      "range": 5,
+      "range": 200,
       "splash": 5
     },
     {
       "id": 1002,
       "color": "black",
+      "type": "pawn",
       "attack": 10,
       "attack_speed": 10,
-      "range": 5,
+      "range": 200,
       "splash": 0
     }
   ]

@@ -10,8 +10,28 @@ export const getTower = (userId) => {
   return towers[userId];
 };
 
-export const setTower = (userId, positionX, positionY, type, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr) => {
-  return towers[userId].push({ userId, positionX, positionY, type, timestamp, data, isGetBuff, buffTowerPos, buffTowerArr });
+export const setTower = (
+  userId,
+  positionX,
+  positionY,
+  type,
+  timestamp,
+  data,
+  isGetBuff,
+  buffTowerPos,
+  buffTowerArr,
+) => {
+  return towers[userId].push({
+    userId,
+    positionX,
+    positionY,
+    type,
+    timestamp,
+    data,
+    isGetBuff,
+    buffTowerPos,
+    buffTowerArr,
+  });
 };
 
 export const clearTower = (userId) => {
@@ -22,8 +42,19 @@ export const clearRemoveTower = (userId) => {
   removeTowers[userId] = [];
 };
 
-export const removeTower = (userId, towerId, positionX, positionY, timestamp) => {
-  const index = towers[userId].findIndex((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+export const removeTower = (
+  userId,
+  towerId,
+  positionX,
+  positionY,
+  timestamp,
+) => {
+  const index = towers[userId].findIndex(
+    (tower) =>
+      tower.data.id === towerId &&
+      tower.positionX === positionX &&
+      tower.positionY === positionY,
+  );
   if (index !== -1) {
     removeTowers[userId].push(towers[userId][index], timestamp);
     return towers[userId].splice(index, 1)[0];
@@ -31,12 +62,19 @@ export const removeTower = (userId, towerId, positionX, positionY, timestamp) =>
 };
 
 export const upgradeTower = (userId, towerId, positionX, positionY) => {
-  const index = towers[userId].findIndex((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
+  const index = towers[userId].findIndex(
+    (tower) =>
+      tower.data.id === towerId &&
+      tower.positionX === positionX &&
+      tower.positionY === positionY,
+  );
   if (index !== -1) {
-    towers[userId][index].data.card = Number(towers[userId][index].data.card) + 1 + '';
+    towers[userId][index].data.card =
+      Number(towers[userId][index].data.card) + 1 + "";
     towers[userId][index].data.attack = towers[userId][index].data.attack + 1;
-    towers[userId][index].data.attack_speed = towers[userId][index].data.attack_speed + 0.2;
-    towers[userId][index].data.range = towers[userId][index].data.range + 0.1;
+    towers[userId][index].data.attack_speed =
+      towers[userId][index].data.attack_speed + 1;
+    towers[userId][index].data.range = towers[userId][index].data.range + 1;
   }
 };
 

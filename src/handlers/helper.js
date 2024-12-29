@@ -40,7 +40,6 @@ export const handlerEvent = async (io, socket, data) => {
   if (!handler) {
     socket.emit("response", { status: "fail", message: "Handler not found" });
   }
-  console.log("!!!!!!!!event!!!!!!!", data.userId);
   const response = await handler(data.userId, data.payload);
   // if (response.broadcast) {
   //   io.emit("response", response);
