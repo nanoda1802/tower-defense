@@ -19,12 +19,10 @@ export const handleConnection = async (socket, userId) => {
   createAliveMonsters(userId);
   //데이터 데이블 전체 조회
   const assets = getGameAssets();
-  console.log("!!!!!connection!!!!!!", userId);
   //해당 유저의 웨이브 생성
   createWave(userId);
   createTower(userId);
   clearRemoveTower(userId);
-  
 
   socket.emit("connection", { userId, assets });
 };
