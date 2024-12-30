@@ -1,5 +1,5 @@
 /* 이미지 준비 */
-const NUM_OF_MONSTERS = 5;
+const NUM_OF_MONSTERS = 10;
 const NUM_OF_PAWNS = 10;
 const NUM_OF_SPECIALS = 7;
 // [1] 배경
@@ -34,7 +34,7 @@ const pathImage = new Image();
 pathImage.src = "images/road.png";
 // [7] 몬스터
 const monsterImages = [];
-for (let i = 1; i <= NUM_OF_MONSTERS; i++) {
+for (let i = 0; i < NUM_OF_MONSTERS; i++) {
   const img = new Image();
   img.src = `images/monster${i}.png`;
   monsterImages.push(img);

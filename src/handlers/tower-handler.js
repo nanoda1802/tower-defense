@@ -17,14 +17,7 @@ import {
   getRemoveTower,
 } from "../models/tower-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
-import {
-  getAliveBosses,
-  getAliveMonsters,
-  setDeathMonsters,
-  setDeathBosses,
-  getDeathMonsters,
-  getDeathBosses,
-} from "../models/monster-model.js";
+import { getAliveMonsters } from "../models/monster-model.js";
 
 const TOWER_TYPE_BUFF = "buffer";
 const BUFF_VALUE = 50;
@@ -117,7 +110,7 @@ export const getTowerHandler = (userId, payload) => {
       positionY,
       type,
       timestamp,
-      towerInfo,
+      Object.assign({}, towerInfo),
       false,
       null,
       [],
@@ -351,10 +344,7 @@ export const attackTowerHandler = (userId, payload) => {
     }
 
     // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
-    const aliveTargets =
-      monsterType === MONSTER_TYPE
-        ? getAliveMonsters(userId)
-        : getAliveBosses(userId);
+    const aliveTargets = getAliveMonsters(userId);
     const targetInfo = aliveTargets.find(
       (target) =>
         target.monsterId === monsterId &&
@@ -377,10 +367,6 @@ export const attackTowerHandler = (userId, payload) => {
       return { status: "fail", message: "This is not a valid attack" };
     }
 
-    // 변경 전 골드 초기화
-    const userGold = getGold(userId);
-    const beforeGold = userGold[userGold.length - 1].gold;
-
     /*** 5. 공격 처리
      * 5-1. 체력 감소
      * 5-2. (조건) 몬스터 체력이 0이면 사망처리 / 골드 획득 처리
@@ -399,20 +385,16 @@ export const attackTowerHandler = (userId, payload) => {
      */
     // 일반 타워 특수 타워
     const monsterArr = [];
-    const bossArr = [];
     if (towerInfo.data.color === TOWER_COLOR_BLACK) {
       //단일 공격
       attackDamage(userId, monsterType, towerInfo, targetInfo, timestamp);
-      monsterType === MONSTER_TYPE
-        ? monsterArr.push(targetInfo)
-        : bossArr.push(targetInfo);
+      monsterArr.push(targetInfo);
     } else if (
       towerInfo.data.color === TOWER_COLOR_RED ||
       towerInfo.data.card === "joker"
     ) {
       // 몬스터 생존 정보 조회
       const alliveMonsters = getAliveMonsters(userId);
-      // const alliveBosses = getAliveBosses(userId);
 
       alliveMonsters.forEach((monster) => {
         checkSplashAttack(
@@ -427,18 +409,11 @@ export const attackTowerHandler = (userId, payload) => {
           timestamp,
         );
       });
-
-      // alliveBosses.forEach((boss) => {
-      //   checkSplashAttack(userId, boss, MONSTER_TYPE, monsterPositionX, monsterPositionY, towerInfo, targetInfo, bossArr, timestamp);
-      // });
     }
 
     return {
       status: "success",
-      gold: userGold[userGold.length - 1].gold,
-      cost: userGold[userGold.length - 1].gold - beforeGold,
       monsters: monsterArr,
-      bosses: bossArr,
     };
   } catch (error) {
     throw new Error("Failed to attackTowerHandler !! " + error.message);
@@ -542,17 +517,26 @@ const checkTowerAsset = (type, towerId) => {
 
 /** 몬스터 Asset 정보 체크 */
 const checkMosterAsset = (type, monsterId) => {
-  const { bosses, monsters } = getGameAssets();
+  const { monsters } = getGameAssets();
+
   // 타워 유형에 대한 검증
   if (type === MONSTER_TYPE) {
     // 기준정보 유무 체크 (pawnTowers)
-    if (!monsters.data.some((monster) => monster.id === monsterId)) {
-      return "No boss found for asset";
+    if (
+      !monsters.data.some(
+        (monster) => monster.id === monsterId && monster.type === MONSTER_TYPE,
+      )
+    ) {
+      return "No monster found for asset";
     }
   } else if (type === BOSS_TYPE) {
-    // 기준정보 유무 체크 (specialTower)
-    if (!bosses.data.some((boss) => boss.id === monsterId)) {
-      return "No monster found for asset";
+    // 기준정보 유무 체크 (pawnTowers)
+    if (
+      !monsters.data.some(
+        (monster) => monster.id === monsterId && monster.type === BOSS_TYPE,
+      )
+    ) {
+      return "No boss found for asset";
     }
   } else {
     // Type 값이 유효하지 않으면 Err

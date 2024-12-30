@@ -1,217 +1,44 @@
 import { getGameAssets } from "../inits/assets.js";
-import {
-  createWave,
-  getWave,
-  startWave,
-  validateWave,
-  progressToNextWave,
-} from "../models/wave-model.js";
-import { createAliveMonsters } from "../models/monster-model.js";
-import { setGold } from "../models/gold-model.js";
-import { START_MONEY } from "../constants.js";
+import { getWave, setWave } from "../models/wave-model.js";
 
-/** 웨이브 시작 처리 */
-export const waveStartHandler = (userId, payload) => {
-  try {
-    const { waves } = getGameAssets();
-    const { timestamp } = payload;
-
-    // 1. 웨이브 진행 가능 상태 체크
-    const waveValidation = validateWave(userId);
-    if (waveValidation.valid && waveValidation.isActive) {
-      return { status: "fail", message: "이미 진행 중인 웨이브가 있습니다." };
-    }
-
-    // 2. 웨이브 정보 조회 및 생성
-    const wave = getWave(userId);
-    const currentWaveIndex = wave ? wave.currentWaveIndex : 0;
-    const currentWaveData = waves.data[currentWaveIndex];
-
-    if (!wave) {
-      createWave(userId);
-      createAliveMonsters(userId);
-      setGold(userId, START_MONEY, START_MONEY, "START", timestamp);
-    }
-
-    // 3. 웨이브 시작 처리
-    startWave(userId, currentWaveData);
-
-    return {
-      status: "success",
-      waveNumber: currentWaveIndex + 1, // 웨이브 번호
-      monsterCount: currentWaveData.monster_cnt, // 몬스터 수
-      monsterId: currentWaveData.monster_id, // 몬스터 아이디
-      bossId: currentWaveData.boss_id, // 보스 아이디
-      timestamp: timestamp, // 타임스탬프
-    };
-  } catch (error) {
-    throw new Error("Failed to waveStartHandler !! " + error.message);
+/* 사용자의 웨이브 이동 처리 */
+export const waveChangeHandler = (userId, payload) => {
+  const {
+    monsterIndex,
+    currentWave,
+    targetWave,
+    timestamp: changeTime,
+  } = payload;
+  // [1] 사용자의 현재 기준 웨이브 정보 조회
+  let myWaves = getWave(userId);
+  // [1-1] 웨이브 정보가 빈 배열이면, 즉 게임 진행 사항이 없는 사용자면 실패 응답
+  if (!myWaves.length) {
+    return { status: "fail", message: "진행 정보가 없는 사용자임다!!" };
   }
-};
-
-/** 다음 웨이브로 진행 처리 */
-export const nextWaveHandler = (userId, payload) => {
-  try {
-    const { currentWave, nextWave, timestamp } = payload;
-
-    // 1. 웨이브 진행 가능 상태 체크
-    const waves = getWave(userId);
-    if (!waves) {
-      return { status: "fail", message: "현재 진행 중인 웨이브가 없습니다." };
-    }
-
-    // 2. 현재 웨이브 상태 체크
-    if (currentWave !== waves[waves.length - 1]) {
-      return {
-        status: "fail",
-        message: "보내준 정보가 서버의 웨이브와 일치하지 않습니다!!!!",
-      };
-    }
-
-    // 3. 남은 몬스터 체크
-    if (waves.remainingMonsters > 0) {
-      return {
-        status: "fail",
-        message: `아직 처치해야 할 몬스터가 ${waves.remainingMonsters}마리 남아있습니다.`,
-      };
-    }
-
-    // 4. 다음 웨이브 진행
-    if (progressToNextWave(userId, timestamp)) {
-      return {
-        status: "success",
-        waveNumber: waves.currentWaveIndex + 2, // 다음 웨이브 번호
-        timestamp: timestamp, // 타임스탬프
-      };
-    } else {
-      return {
-        status: "success",
-        type: "allComplete", // 모든 몬스터 처치 완료
-        timestamp: timestamp, // 타임스탬프
-      };
-    }
-  } catch (error) {
-    throw new Error("Failed to nextWaveHandler !! " + error.message);
+  // [2] 사용자가 지난 웨이브 목록 오름차순으로 정렬
+  myWaves.sort((a, b) => a.waveId - b.waveId);
+  // [3] 지난 웨이브 중 최근, 즉 배열의 마지막 웨이브 ID 값 가져옴
+  const lastWaveId = myWaves[myWaves.length - 1].waveId;
+  // [4] 서버에 저장된 최근 웨이브 ID와, 클라이언트가 보낸 현재 웨이브 ID가 동일한지 비교
+  if (lastWaveId !== currentWave) {
+    // 다르다면 유효하지 않은 요청이므로 실패 응답
+    return { status: "fail", message: "당신과 서버의 웨이브 정보가 다름다!!" };
   }
-};
-
-/** 웨이브 상태 조회 */
-export const getWaveStatusHandler = (userId) => {
-  try {
-    // 1. 웨이브 상태 체크
-    const waveValidation = validateWave(userId);
-    if (!waveValidation.valid) {
-      return { status: "fail", message: waveValidation.message };
-    }
-
-    // 2. 웨이브 정보 조회
-    const wave = getWave(userId);
-    return {
-      status: "success",
-      currentWave: wave.currentWaveIndex + 1, // 현재 웨이브 번호
-      isActive: wave.isActive, // 웨이브 진행 여부
-      remainingMonsters: wave.remainingMonsters, // 남은 몬스터 수
-    };
-  } catch (error) {
-    throw new Error("Failed to getWaveStatusHandler !! " + error.message);
+  // [5] 재료 데이터에서 웨이브 정보 가져옴
+  const { waves } = getGameAssets();
+  // [6] 목표 처치 수와 클라가 처치한 몬스터 수 비교해 더 적으면 실패 응답
+  const killCount = waves.data.find(
+    (wave) => wave.id === currentWave,
+  ).monster_cnt;
+  if (killCount > monsterIndex + 1) {
+    return { status: "fail", message: "남은 몬스터가 있슴다!!" };
   }
-};
-
-/** 웨이브 이벤트 핸들러 */
-export const waveChangeHandler = (io, socket) => {
-  const userId = socket.handshake.query.userId;
-
-  try {
-    // 웨이브 시작
-    socket.on("waveStart", (payload) => {
-      try {
-        const result = waveStartHandler(userId, payload);
-        if (result.status === "fail") {
-          io.to(userId).emit("wave:error", { message: result.message });
-          return;
-        }
-        io.to(userId).emit("wave:started", result);
-      } catch (error) {
-        io.to(userId).emit("wave:error", { message: error.message });
-      }
-    });
-
-    // 다음 웨이브로 진행
-    socket.on("wave:next", (payload) => {
-      try {
-        const result = nextWaveHandler(userId, payload);
-        if (result.status === "fail") {
-          io.to(userId).emit("wave:error", { message: result.message });
-          return;
-        }
-        if (result.type === "allComplete") {
-          io.to(userId).emit("wave:allComplete", {
-            timestamp: result.timestamp,
-          });
-        } else {
-          io.to(userId).emit("wave:next", result);
-        }
-      } catch (error) {
-        io.to(userId).emit("wave:error", { message: error.message });
-      }
-    });
-
-    // 웨이브 상태 조회
-    socket.on("wave:getStatus", () => {
-      try {
-        const result = getWaveStatusHandler(userId);
-        if (result.status === "fail") {
-          io.to(userId).emit("wave:error", { message: result.message });
-          return;
-        }
-        io.to(userId).emit("wave:status", result);
-      } catch (error) {
-        io.to(userId).emit("wave:error", { message: error.message });
-      }
-    });
-
-    // 몬스터 처치 이벤트
-    socket.on("monster:killed", (payload) => {
-      try {
-        const wave = getWave(userId);
-        if (!wave || !wave.isActive) {
-          io.to(userId).emit("wave:error", {
-            message: "진행 중인 웨이브가 없습니다.",
-          });
-          return;
-        }
-
-        wave.remainingMonsters--;
-
-        if (wave.remainingMonsters <= 0) {
-          const result = nextWaveHandler(userId, {
-            timestamp: payload.timestamp,
-          });
-          if (result.status === "fail") {
-            io.to(userId).emit("wave:error", { message: result.message });
-            return;
-          }
-
-          if (result.type === "allComplete") {
-            io.to(userId).emit("wave:allComplete", {
-              timestamp: result.timestamp,
-            });
-          } else {
-            io.to(userId).emit("wave:next", result);
-          }
-        }
-
-        io.to(userId).emit("wave:status", {
-          status: "success",
-          currentWave: wave.currentWaveIndex + 1, // 현재 웨이브 번호
-          isActive: wave.isActive, // 웨이브 진행 여부
-          remainingMonsters: wave.remainingMonsters, // 남은 몬스터 수
-        });
-      } catch (error) {
-        io.to(userId).emit("wave:error", { message: error.message });
-      }
-    });
-  } catch (error) {
-    io.to(userId).emit("wave:error", { message: "Server error occurred" });
+  // [9] 클라이언트가 목표한 다음 웨이브 정보의 ID가 서버 재료 데이터에 없으면 실패 응답
+  if (!waves.data.some((wave) => wave.id === targetWave)) {
+    return { status: "fail", message: "넘어갈 웨이브가 없슴다!!" };
   }
+  // [10] 모든 검증 통과 시 사용자의 웨이브를 다음으로 이동시키고, 이동 시간 기록
+  setWave(userId, targetWave, changeTime);
+  // [11] 웨이브 이동 성공 응답 반환
+  return { status: "success", message: "웨이브 이동 성공임다!!" };
 };

@@ -1,98 +1,24 @@
-// import { getGameAssets } from "../inits/assets.js";
+/* 사용자별 웨이브 정보 관리 */
+// { userId : [ 웨이브 정보 ]} 형태의 객체
+const waves = {};
 
-const waves = {
-  tester: {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 20,
-    bossSpawned: false,
-  },
-};
-const removeWaves = { tester: [] };
-
+// 신규 사용자의 웨이브 초기화
 export const createWave = (userId) => {
-  waves[userId] = {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 0,
-    bossSpawned: false,
-  };
+  waves[userId] = []; // 빈 배열 투입!
 };
 
+// 특정 사용자의 웨이브 정보 조회
 export const getWave = (userId) => {
-  return waves[userId];
+  return waves[userId]; // userId를 통해 사용자 식별
 };
 
+// 사용자 웨이브 정보 업데이트
+export const setWave = (userId, waveId, timestamp) => {
+  // userId로 사용자 식별해 어느 단계인지 알려주는 id와 그 단계에 진입한 timestamp 투입!
+  return waves[userId].push({ waveId, timestamp });
+};
+
+// ?? createStage랑 정확히 동일한 역할을 하는데, 둘이 별개일 이유가 있을까??
 export const clearWave = (userId) => {
-  waves[userId] = {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 0,
-    bossSpawned: false,
-  };
-};
-
-export const clearRemoveWave = (userId) => {
-  removeWaves[userId] = [];
-};
-
-export const validateWave = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
-  }
-  return { valid: true, isActive: wave.isActive };
-};
-
-export const validateMonster = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
-  }
-  if (!wave.isActive) {
-    return { valid: false, message: "진행 중인 웨이브가 없습니다.", isActive: false };
-  }
-  if (wave.remainingMonsters <= 0) {
-    return { valid: false, message: "처치할 몬스터가 없습니다.", isActive: true };
-  }
-  return { valid: true, isActive: true };
-};
-
-export const validateBoss = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
-  }
-  if (!wave.isActive) {
-    return { valid: false, message: "진행 중인 웨이브가 없습니다.", isActive: false };
-  }
-  if (!wave.bossSpawned) {
-    return { valid: false, message: "보스가 아직 등장하지 않았습니다.", isActive: true };
-  }
-  return { valid: true, isActive: true };
-};
-
-export const isWaveComplete = (userId) => {
-  const wave = waves[userId];
-  return wave.remainingMonsters === 0 && wave.bossSpawned;
-};
-
-// 다음 웨이브 진행
-export const progressToNextWave = (userId) => {
-  const wave = waves[userId];
-  if (wave.currentWaveIndex < 4) {
-    // wave.json의 데이터 길이 - 1
-    wave.currentWaveIndex++;
-    wave.isActive = false;
-    wave.bossSpawned = false;
-    return true;
-  }
-  return false;
-};
-
-export const startWave = (userId, waveData) => {
-  const wave = waves[userId];
-  wave.isActive = true;
-  wave.remainingMonsters = waveData.monster_cnt;
-  wave.bossSpawned = false;
+  waves[userId] = [];
 };
