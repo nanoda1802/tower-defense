@@ -34,29 +34,21 @@ export const gameStart = (userId, payload) => {
   return { status: "success", message: "Game Started!!", gold: initGold };
 };
 
-// 예시로 작성된 getGameData 함수
-const getGameData = (userId) => {
-  // 서버에서 점수와 골드를 한 번에 가져오는 로직 (예시)
-  const scores = getscore(userId); // 서버에서 점수 데이터
-  const gold = getGold(userId);    // 서버에서 골드 데이터
-
-  return {
-    score: scores[scores.length - 1]?.sumScore || 0,
-    gold: gold[gold.length - 1]?.gold || 0
-  };
-};
-
 /* Game End 12 */
 export const gameEnd = (userId, payload) => {
   // payload 구조 및 타입 검사
-  if (!payload || typeof payload.timestamp !== 'number' || typeof payload.score !== 'number' || typeof payload.leftGold !== 'number') {
+  if (!payload || typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
     throw new Error("잘못된 payload 형식");
   }
 
   const { timestamp: gameEndTime, score, leftGold } = payload;
 
   // 서버에서 최신 점수와 골드 데이터를 가져오기
-  const { score: serverScore = 0, gold: serverGold = 0 } = getGameData(userId); // getGameData 함수에서 한번에 score와 gold 데이터를 가져옴
+  const scores = getscore(userId); // 서버에서 점수 데이터
+  const gold = getGold(userId); // 서버에서 골드 데이터
+
+  const serverScore = scores[scores.length - 1]?.sumScore || 0; // 최신 점수 가져오기
+  const serverGold = gold[gold.length - 1]?.gold || 0; // 최신 골드 가져오기
 
   // 클라이언트와 서버 점수 비교
   if (serverScore !== score) {
@@ -71,6 +63,7 @@ export const gameEnd = (userId, payload) => {
   // 최종 점수 계산
   const finalScore = serverScore + serverGold;
 
+  // 최종 결과 반환
   return {
     status: "success",
     message: "게임이 성공적으로 종료되었습니다.",
@@ -83,7 +76,6 @@ export const gameEnd = (userId, payload) => {
     },
   };
 };
-
 
 /* Game Save 13 */
 export const gameSave = (userId, payload) => {

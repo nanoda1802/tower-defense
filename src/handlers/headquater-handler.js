@@ -1,22 +1,23 @@
+import { getGameAssets } from "../inits/assets.js";
+import { getHeadquater, setHeadquater } from "../models/headquater.model.js";
+import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
+// x1000 y300 베이스 좌표
+// 1000을 넘으면 총돌
+// 헤드퀸터 충돌 처리
+
 export const collideHandler = (userid, payload) => {
   const { monsters } = getGameAssets();
   const { monsterId, monsterIndex, monsterX, monsterY, timestamp } = payload;
 
   // 몬스터의 현재 위치 계산
-  const currentMonsterX = calculateMonsterMove(
-    monsterId,
-    monsterIndex,
-    timestamp,
-  );
+  const currentMonsterX = calculateMonsterMove(monsterId, monsterIndex, timestamp);
 
   const tolerance = 10; // 허용 오차 범위 설정
 
   // 몬스터가 본부에 충돌했을 때 처리
   if (Math.abs(monsterX - currentMonsterX) <= tolerance) {
     // 몬스터의 공격력 추출
-    const monster = monsters.data.find(
-      (monster) => monster.id === monsterId
-    );
+    const monster = monsters.data.find((monster) => monster.id === monsterId);
     const monsterAttack = monster.attack;
 
     // 최신 본부 HP 가져오기
@@ -42,7 +43,7 @@ export const collideHandler = (userid, payload) => {
       클라이언트 좌표: ${monsterX}, 
       서버 계산 좌표: ${currentMonsterX}, 
       차이: ${difference}, 
-      타임스탬프: ${timestamp}`
+      타임스탬프: ${timestamp}`,
     );
   }
 };
