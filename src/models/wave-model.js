@@ -42,7 +42,7 @@ class WaveModel {
 
     return {
       wave_number: wave.currentWaveIndex + 1,
-      monster_cnt: 5, // 기본 몬스터 수 설정
+      monster_cnt: 10, // 기본 몬스터 수 설정
     };
   }
 
