@@ -11,7 +11,7 @@ export class Wave {
     this.waveChange = false;
   }
 
-  update() {
+  update(monsterIndex) {
     if (this.targetKillCount <= 0) {
       this.waveChange = true;
       if (this.wave === 5) {
@@ -20,13 +20,17 @@ export class Wave {
       }
     }
     if (this.waveChange) {
-      // sendEvent(51, {
-      //   currentWave: this.wave,
-      //   nextWave: this.wave + 1,
-      //   timestamp: Date.now(),
-      // });
-      this.wave += 1;
-      this.setWave();
+      const currentWaveId = waveTable[this.wave - 1].id;
+      // 서버에 메세지 보냄
+      sendEvent(51, {
+        monsterIndex,
+        currentWave: currentWaveId,
+        targetWave: currentWaveId + 1,
+        timestamp: Date.now(),
+      }).then((res) => {
+        this.wave += 1;
+        this.setWave();
+      });
     }
   }
 
