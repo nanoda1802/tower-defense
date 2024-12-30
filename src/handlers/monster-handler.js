@@ -11,8 +11,9 @@ import { getscore, setscore } from "../models/score-model.js";
 /* CreateMonsterHandler 31 */
 export const createMonsterHandler = (userId, payload) => {
   try {
+    let isBoss = false;
     const { monsters, waves } = getGameAssets(); //assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
-    const { timestamp, waveId, monsterId, monsterIndex} = payload; //socket으로 받을 payload정보 리스트
+    const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     //timestamp는 소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
 
     // 몬스터 정보 조회
@@ -23,9 +24,15 @@ export const createMonsterHandler = (userId, payload) => {
 
     // 몬스터 출현 스테이지 검증
     const monsterWave = waves.data.find((wave) => wave.id === waveId);
-    if (monsterWave.monster_id !== monsterId && monsterWave.boss_id !== monsterId) {
+    if (
+      monsterWave.monster_id !== monsterId &&
+      monsterWave.boss_id !== monsterId
+    ) {
       //waveId를 검증한 후 해당 monsterId와 payload의 monsterId 검증
-      return { status: "fail", message: "해당 스테이지의 몬스터 id가 아닙니다." };
+      return {
+        status: "fail",
+        message: "해당 스테이지의 몬스터 id가 아닙니다.",
+      };
     }
 
     //몬스터 개체수 검증
@@ -34,9 +41,10 @@ export const createMonsterHandler = (userId, payload) => {
     } //몬스터인덱스가 웨이브 숫자보다 높아지면 에러
 
     //보스몬스터 출현 검증)
-    if(monsterIndex === monsterWave.monster_cnt){ //몬스터 인덱스가 웨이브의 몬스터 숫자와 같을때
-      if(monsterId !== monster){
-        return {status: "fail", message: "보스몬스터가 잘못 나왔습니다."}
+    if (monsterIndex === monsterWave.monster_cnt) {
+      //몬스터 인덱스가 웨이브의 몬스터 숫자와 같을때
+      if (monsterId !== monster) {
+        return { status: "fail", message: "보스몬스터가 잘못 나왔습니다." };
       }
     }
 
@@ -57,6 +65,8 @@ export const createMonsterHandler = (userId, payload) => {
       monsterGold,
       monsterScore,
     );
+    // 보스인지 쳌
+    isBoss = monsterId > 200 ? true : false;
     return {
       status: "success",
       message: "몬스터 생성 성공",
@@ -66,6 +76,7 @@ export const createMonsterHandler = (userId, payload) => {
       monsterSpeed,
       monsterGold,
       monsterScore,
+      isBoss,
       handlerId: 31,
     };
   } catch (error) {
@@ -84,7 +95,7 @@ export const deathMonsterHandler = (userId, payload) => {
       monsterIndex,
       monsterHealth,
       monsterGold,
-      monsterScore
+      monsterScore,
     } = payload; //payloal 정보
     //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
     const monster = aliveMonsters.find((monster) => {
@@ -112,7 +123,7 @@ export const deathMonsterHandler = (userId, payload) => {
       monsterIndex,
       monsterHealth,
       monsterGold,
-      monsterScore
+      monsterScore,
     );
 
     //골드 증가
@@ -156,7 +167,6 @@ export const deathMonsterHandler = (userId, payload) => {
   }
 };
 
-
 /* CreateBossHandler 32 */
 // export const createBossHandler = (userId, payload) => {
 //   try {
@@ -199,7 +209,6 @@ export const deathMonsterHandler = (userId, payload) => {
 //     throw new Error("Failed to create boss !! " + error.message);
 //   }
 // };
-
 
 /* deathBossHandler 34 */
 // export const deathBossHandler = (userId, payload) => {

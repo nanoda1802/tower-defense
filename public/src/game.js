@@ -25,7 +25,7 @@ let HQ; // 기지 객체
 let baseHp = 0; // 기지 체력
 let wave = 0;
 
-let monsterSpawnInterval = 1500; // 몬스터 생성 주기
+let monsterSpawnInterval = 100; // 몬스터 생성 주기
 let monsters = [];
 let towers = [];
 let monsterPath;
@@ -145,36 +145,59 @@ function placeNewTower(type, color) {
 }
 /* 몬스터 생성 */
 let monsterIndex = 0;
+let currentWave = 0;
 function spawnMonster() {
-  let currentWave = wave.wave;
+  // [4] 웨이브 바뀌면 인덱스 초기화
+  if (currentWave < wave.wave) {
+    monsterIndex = 0;
+  }
+  currentWave = wave.wave;
+  let monsterId = waveTable[currentWave - 1].monster_id;
+  const killCount = waveTable[currentWave - 1].monster_cnt;
+  if (killCount - 1 === monsterIndex) {
+    monsterId = waveTable[currentWave - 1].boss_id;
+  }
   // [1] 서버에 메세지 보냄
   sendEvent(31, {
     timestamp: Date.now(),
     waveId: waveTable[currentWave - 1].id,
-    monsterId: waveTable[currentWave - 1].monster_id,
+    monsterId,
     monsterIndex,
   }).then((res) => {
     if (res.status === "success") {
       // [2] 몬스터생성
-      monsters.push(
-        new Monster(
-          monsterPath,
-          monsterImages[currentWave - 1],
-          res.monsterId,
-          res.monsterHealth,
-          res.monsterAttack,
-          res.monsterSpeed,
-          res.monsterGold,
-          res.monsterScore,
-          currentWave,
-          monsterIndex,
-        ),
-      );
+      if (res.isBoss) {
+        monsters.push(
+          new Monster(
+            monsterPath,
+            monsterImages[currentWave + 4],
+            res.monsterId,
+            res.monsterHealth,
+            res.monsterAttack,
+            res.monsterSpeed,
+            res.monsterGold,
+            res.monsterScore,
+            currentWave,
+            monsterIndex,
+          ),
+        );
+      } else if (!res.isBoss) {
+        monsters.push(
+          new Monster(
+            monsterPath,
+            monsterImages[currentWave - 1],
+            res.monsterId,
+            res.monsterHealth,
+            res.monsterAttack,
+            res.monsterSpeed,
+            res.monsterGold,
+            res.monsterScore,
+            currentWave,
+            monsterIndex,
+          ),
+        );
+      }
       monsterIndex += 1; // [3] 인덱스 증가
-    }
-    // [4] 웨이브 바뀌면 인덱스 초기화
-    if (monsterIndex === waveTable[currentWave - 1].monster_cnt) {
-      monsterIndex = 0;
     }
   });
 }
@@ -182,6 +205,11 @@ function spawnMonster() {
 async function gameLoop() {
   // [1] 배경과 경로, 웨이브 최신화
   drawMap(monsterPath);
+  monsterSpawnInterval -= 1;
+  if (monsterSpawnInterval <= 0) {
+    spawnMonster();
+    monsterSpawnInterval = 100;
+  }
   // [3] 타워 그리기와 몬스터 공격 판정 체크
   towers.forEach((tower) => {
     tower.draw(ctx);
@@ -228,7 +256,7 @@ async function gameLoop() {
       // [5-1 B] 몬스터가 죽었다면 배열에서 제거
       // [B-1] 서버에 메세지 보냄
       monster.isEventProcessing = true;
-      sendEvent(33, {
+      sendEvent(32, {
         timestamp: Date.now(),
         monsterId: monster.id,
         monsterIndex: monster.index,
@@ -242,6 +270,7 @@ async function gameLoop() {
           userGold += goldReward;
           score += scoreReward;
           // [B-3] 몬스터 제거 및 웨이브 목표 킬 수 차감
+          console.log("몇 번째가 죽은 거임??? ", monster.index);
           monsters.splice(i, 1);
           wave.targetKillCount -= 1;
           wave.update(monster.index);
@@ -274,13 +303,13 @@ function initGame() {
   monsters = [];
   towers = [];
   score = 0;
+  currentWave = 0;
+  monsterIndex = 0;
   monsterPath = generatePath(); // 몬스터 경로 준비
   drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
   placeHQ(); // 기지 배치
   wave = new Wave(); // 웨이브 생성
   wave.setWave();
-  // // [3] 생성 주기에 맞게 몬스터 생성 시작
-  setInterval(spawnMonster, monsterSpawnInterval);
   // [4] 게임 실행 상태로 바꾸고 루프 ON
   isInitGame = true;
   gameLoop();
