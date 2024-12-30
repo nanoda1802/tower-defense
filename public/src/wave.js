@@ -27,10 +27,9 @@ export class Wave {
         currentWave: currentWaveId,
         targetWave: currentWaveId + 1,
         timestamp: Date.now(),
-      }).then((res) => {
-        this.wave += 1;
-        this.setWave();
       });
+      this.wave += 1;
+      this.setWave();
     }
   }
 
