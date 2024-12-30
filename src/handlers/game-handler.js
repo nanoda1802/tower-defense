@@ -2,15 +2,9 @@ import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
-import { getDeathMonsters, getDeathBosses } from "../models/monster-model.js";
 import { clearscore, getscore } from "../models/score-model.js";
 import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
-import {
-  createAliveMonsters,
-  createDeathMonsters,
-  createAliveBosses,
-  createDeathBosses,
-} from "../models/monster-model.js";
+import { createAliveMonsters } from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -37,12 +31,6 @@ export const gameStart = (userId, payload) => {
   setHeadquater(userId, 100, payload.timestamp);
   //생존한 몬스터 초기화
   createAliveMonsters(userId);
-  //죽은 몬스터 초기화
-  createDeathMonsters(userId);
-  //생존한 보스 초기화
-  createAliveBosses(userId);
-  //죽은 보스 초기화
-  createDeathBosses(userId);
   return { status: "success", message: "Game Started!!", gold: initGold };
 };
 
@@ -53,14 +41,11 @@ export const gameEnd = (userId, payload) => {
   score: 클라이언트에서 처리된 스코어,
   leftGold: 남은 골드의 량
   */
+
   const { timestamp: gameEndTime, score, leftGold } = payload;
 
   // payload 타입 검사
-  if (
-    typeof payload.timestamp !== "number" ||
-    typeof payload.score !== "number" ||
-    typeof payload.leftGold !== "number"
-  ) {
+  if (typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
     throw new Error("잘못된 payload 형식");
   }
 
@@ -71,9 +56,7 @@ export const gameEnd = (userId, payload) => {
 
   //이제 이걸 클라이언트에서 가져온 score랑 비교를 해야된다.
   if (serverScore !== score) {
-    console.error(
-      `클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`,
-    );
+    console.error(`클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`);
     return;
   }
   console.log(`serverScore: ${serverScore} clientScore: ${score}`);
@@ -85,15 +68,14 @@ export const gameEnd = (userId, payload) => {
 
   //이걸 left gold하고 비교
   if (serverGold !== leftGold) {
-    console.error(
-      `클라이언트 골드 ${leftGold}와 서버 골드 ${serverGold}가 다릅니다. ${serverGold - leftGold} 차이가 납니다.`,
-    );
+    console.error(`클라이언트 골드 ${leftGold}와 서버 골드 ${serverGold}가 다릅니다. ${serverGold - leftGold} 차이가 납니다.`);
     return;
   }
 
   // 모든 검증이 끝났으면 골드와 스코어를 더해주고 반환
   let finalScore = serverScore + score;
   console.log("finalScore", finalScore);
+
 
   // 모든 검증이 끝났으면 userid와 스코어와 leftGold 저장 db에 저장하고 싶은데 아직 어떻게 저장해야 된다 redis로 저장.
   return {
