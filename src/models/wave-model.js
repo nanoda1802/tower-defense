@@ -9,12 +9,19 @@ export const WaveState = {
 };
 
 class WaveModel {
+  // 웨이브 모델 초기화
+  // - 유저별 웨이브 정보를 저장할 Map 생성
+  // - 게임 에셋 데이터 로드
+  // - 최대 웨이브 수 설정
   constructor() {
     this.waves = new Map();
     this.assets = getGameAssets();
+    this.maxWaves = 5; // 최대 웨이브 수 설정
   }
 
-  // 웨이브 생성
+  // 새로운 유저의 웨이브 데이터 생성
+  // - 웨이브 번호 1로 초기화
+  // - 초기 상태를 WAITING으로 설정
   createWave(userId) {
     this.waves.set(userId, {
       currentWaveIndex: 0,
@@ -26,31 +33,52 @@ class WaveModel {
     });
   }
 
-  // 현재 웨이브 데이터 가져오기
+  // 현재 웨이브의 기본 정보 반환
+  // - 웨이브 번호에 해당하는 몬스터 수와 정보 반환
+  // - 존재하지 않는 웨이브인 경우 null 반환
   getCurrentWaveData(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave || wave.currentWaveIndex >= this.maxWaves) return null;
+
+    return {
+      wave_number: wave.currentWaveIndex + 1,
+      monster_cnt: 5, // 기본 몬스터 수 설정
+    };
+  }
+
+  // 현재 웨이브의 일반 몬스터 정보 반환
+  // - 웨이브 번호에 맞는 몬스터 템플릿 반환
+  // - 레벨과 능력치 정보 포함
+  getCurrentMonsterData(userId) {
     const wave = this.waves.get(userId);
     if (!wave) return null;
 
-    return this.assets.waves.data[wave.currentWaveIndex];
+    // 웨이브 번호에 맞는 몬스터 데이터 템플릿 제공
+    const monsterId = 100 + (wave.currentWaveIndex + 1);
+    const monsterTemplate = this.assets.monster.data.find((monster) => monster.id === monsterId && monster.type === "monster");
+
+    console.log("Monster Template Data:", monsterTemplate); // 디버깅용
+    return monsterTemplate;
   }
 
-  // 현재 몬스터 데이터 가져오기
-  getCurrentMonsterData(userId) {
-    const waveData = this.getCurrentWaveData(userId);
-    if (!waveData) return null;
-
-    return this.assets.monsters.data.find((monster) => monster.id === waveData.monster_id);
-  }
-
-  // 현재 보스 데이터 가져오기
+  // 현재 웨이브의 보스 몬스터 정보 반환
+  // - 웨이브 번호에 맞는 보스 템플릿 반환
+  // - 보스 고유 능력치와 패턴 정보 포함
   getCurrentBossData(userId) {
-    const waveData = this.getCurrentWaveData(userId);
-    if (!waveData) return null;
+    const wave = this.waves.get(userId);
+    if (!wave) return null;
 
-    return this.assets.bosses.data.find((boss) => boss.id === waveData.boss_id);
+    // 웨이브 번호에 맞는 보스 데이터 템플릿 제공
+    const bossId = 200 + (wave.currentWaveIndex + 1);
+    const bossTemplate = this.assets.monster.data.find((monster) => monster.id === bossId && monster.type === "boss");
+
+    console.log("Boss Template Data:", bossTemplate); // 디버깅용
+    return bossTemplate;
   }
 
-  // 웨이브 시작
+  // 웨이브 시작 처리
+  // - 상태를 WAITING에서 ACTIVE로 변경
+  // - 몬스터 생성 및 초기화
   startWave(userId) {
     const wave = this.waves.get(userId);
     if (!wave) return false;
@@ -70,7 +98,9 @@ class WaveModel {
     return true;
   }
 
-  // 몬스터 처치 처리
+  // 일반 몬스터 처치 시 처리
+  // - 남은 몬스터 수 감소
+  // - 모든 몬스터 처치 시 상태를 BOSS로 변경
   handleMonsterKill(userId) {
     const wave = this.waves.get(userId);
     if (!wave || wave.state !== WaveState.ACTIVE) return false;
@@ -89,7 +119,9 @@ class WaveModel {
     return true;
   }
 
-  // 보스 처치 처리
+  // 보스 몬스터 처치 시 처리
+  // - 보스 처치 시 상태를 COMPLETE로 변경
+  // - 웨이브 클리어 보상 처리
   handleBossKill(userId) {
     const wave = this.waves.get(userId);
     if (!wave || wave.state !== WaveState.BOSS) return false;
@@ -101,11 +133,14 @@ class WaveModel {
   }
 
   // 다음 웨이브로 진행
+  // - 현재 웨이브가 COMPLETE 상태인지 확인
+  // - 다음 웨이브 번호로 업데이트
+  // - 상태를 WAITING으로 초기화
   progressToNextWave(userId) {
     const wave = this.waves.get(userId);
     if (!wave || wave.state !== WaveState.COMPLETE || !wave.bossKilled) return false;
 
-    const nextWaveExists = wave.currentWaveIndex < this.assets.waves.data.length - 1;
+    const nextWaveExists = wave.currentWaveIndex < this.maxWaves - 1;
     if (nextWaveExists) {
       wave.currentWaveIndex++;
       wave.state = WaveState.WAITING;
@@ -115,7 +150,9 @@ class WaveModel {
     return false;
   }
 
-  // 웨이브 상태 조회
+  // 현재 웨이브 상태 정보 반환
+  // - 웨이브 번호, 진행 상태, 남은 몬스터 수
+  // - 현재 몬스터/보스 정보
   getWaveStatus(userId) {
     const wave = this.waves.get(userId);
     if (!wave) return null;
