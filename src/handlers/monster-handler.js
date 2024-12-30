@@ -6,7 +6,7 @@ import {
   setDeathMonsters,
 } from "../models/monster-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
-import { getscore, setscore } from "../models/score-model.js";
+import { getScore, setScore } from "../models/score-model.js";
 
 /* CreateMonsterHandler 31 */
 export const createMonsterHandler = (userId, payload) => {
@@ -43,7 +43,7 @@ export const createMonsterHandler = (userId, payload) => {
     //보스몬스터 출현 검증)
     if (monsterIndex === monsterWave.monster_cnt) {
       //몬스터 인덱스가 웨이브의 몬스터 숫자와 같을때
-      if (monsterId !== monster) {
+      if (monsterId !== monster.id) {
         return { status: "fail", message: "보스몬스터가 잘못 나왔습니다." };
       }
     }
@@ -76,6 +76,7 @@ export const createMonsterHandler = (userId, payload) => {
       monsterSpeed,
       monsterGold,
       monsterScore,
+      monsterIndex,
       isBoss,
       handlerId: 31,
     };
@@ -142,7 +143,7 @@ export const deathMonsterHandler = (userId, payload) => {
 
     //점수 증가
     //현재 보유 점수 조회
-    const userscore = getscore(userId);
+    const userscore = getScore(userId);
 
     //해당 몬스터의 점수가 맞는지 검증
     const rightScore = monsters.data.find(
@@ -152,7 +153,7 @@ export const deathMonsterHandler = (userId, payload) => {
       return { status: "fail", message: "Invalid monster score" };
     }
 
-    setscore(userId, userscore + monsterScore, monsterScore, timestamp);
+    setScore(userId, userscore + monsterScore, monsterScore, timestamp);
 
     return {
       status: "success",

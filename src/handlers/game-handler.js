@@ -2,41 +2,46 @@ import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave, setWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
-import { clearscore, getscore } from "../models/score-model.js";
-import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
+import { clearScore, getScore } from "../models/score-model.js";
 import {
-  createAliveMonsters,
-  createDeathMonsters,
+  clearHeadquarter,
+  setHeadquarter,
+  getHeadquarter,
+} from "../models/headquarter.model.js";
+import {
+  clearAliveMonsters,
+  clearDeathMonsters,
 } from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
-  // 게임 시작 시 에셋 가져오기
-  const { wave } = getGameAssets();
-  // 해당 사용자의 이전 스테이지 정보 초기화
+  // [1] 웨이브 정보 초기화
   clearWave(userId);
-  setWave(userId, 11, Date.now());
-  // 첫 번째 스테이지(id: 1)로 설정하고 시작 시간 기록
-  // setWave(userId, wave.data[0].id, payload.timestamp);
-  // 골드 초기화
+  setWave(userId, 11, payload.timestamp);
+  // [2] 골드 정보 초기화
   clearGold(userId);
-  // 초기 골드 설정 지금은 편의상 100으로 설정
-  setGold(userId, 100, 0, "start", Date.now());
+  setGold(userId, 100, 0, "start", payload.timestamp);
   const initGold = getGold(userId)[0].gold;
-  //타워 초기화
+  // [3] 타워 초기화
   clearTower(userId);
-  //제거 타워 초기화
   clearRemoveTower(userId);
-  //초기 스코어 초기화
-  clearscore(userId);
-  //hQ 채력 초기화
-  clearHeadquater(userId);
-  //hQ 채력 100hp
-  setHeadquater(userId, 100, payload.timestamp);
-  //생존한 몬스터 초기화
-  createAliveMonsters(userId);
-  createDeathMonsters(userId);
-  return { status: "success", message: "Game Started!!", gold: initGold };
+  // [4] 스코어 초기화
+  clearScore(userId);
+  // [5] hQ 채력 초기화
+  clearHeadquarter(userId);
+  setHeadquarter(userId, 10, payload.timestamp);
+  const initHp = getHeadquarter(userId)[0].hp;
+  console.log(initHp);
+  // [6] 몬스터 초기화
+  clearAliveMonsters(userId);
+  clearDeathMonsters(userId);
+  // [7] 성공 응답 반환
+  return {
+    status: "success",
+    message: "Game Started!!",
+    gold: initGold,
+    initHp,
+  };
 };
 
 /* Game End 12 */
@@ -54,7 +59,7 @@ export const gameEnd = (userId, payload) => {
   const { timestamp: gameEndTime, score, leftGold } = payload;
 
   // 서버에서 최신 점수와 골드 데이터를 가져오기
-  const scores = getscore(userId); // 서버에서 점수 데이터
+  const scores = getScore(userId); // 서버에서 점수 데이터
   const gold = getGold(userId); // 서버에서 골드 데이터
 
   const serverScore = scores[scores.length - 1]?.sumScore || 0; // 최신 점수 가져오기
