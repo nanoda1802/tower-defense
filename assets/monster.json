@@ -37,10 +37,20 @@
     {
       "id": 105,
       "health": 50,
+      "type": "monster",
       "attack": 5,
       "speed": 2,
       "gold": 25,
       "score": 50
+    },
+    {
+      "id": 201,
+      "health": 300,
+      "type": "boss",
+      "attack": 999999,
+      "speed": 2,
+      "gold": 500,
+      "score": 1000
     }
   ]
 }
