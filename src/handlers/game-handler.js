@@ -34,53 +34,46 @@ export const gameStart = (userId, payload) => {
   return { status: "success", message: "Game Started!!", gold: initGold };
 };
 
+// 예시로 작성된 getGameData 함수
+const getGameData = (userId) => {
+  // 서버에서 점수와 골드를 한 번에 가져오는 로직 (예시)
+  const scores = getscore(userId); // 서버에서 점수 데이터
+  const gold = getGold(userId);    // 서버에서 골드 데이터
+
+  return {
+    score: scores[scores.length - 1]?.sumScore || 0,
+    gold: gold[gold.length - 1]?.gold || 0
+  };
+};
+
 /* Game End 12 */
 export const gameEnd = (userId, payload) => {
-  //payload
-  /*  timestamp: 게임 종료 시간, 
-  score: 클라이언트에서 처리된 스코어,
-  leftGold: 남은 골드의 량
-  */
-
-  const { timestamp: gameEndTime, score, leftGold } = payload;
-
-  // payload 타입 검사
-  if (typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
+  // payload 구조 및 타입 검사
+  if (!payload || typeof payload.timestamp !== 'number' || typeof payload.score !== 'number' || typeof payload.leftGold !== 'number') {
     throw new Error("잘못된 payload 형식");
   }
 
-  //get score로 최신의 점수를 가져오고 이걸 score랑 비교를 하면 됬다.
-  const scores = getscore(userId); // 서버에서의 score를 가져온다.
+  const { timestamp: gameEndTime, score, leftGold } = payload;
 
-  const serverScore = scores[scores.length - 1]?.sumScore || 0; // 최신 스코어가 없으면 0 반환
+  // 서버에서 최신 점수와 골드 데이터를 가져오기
+  const { score: serverScore = 0, gold: serverGold = 0 } = getGameData(userId); // getGameData 함수에서 한번에 score와 gold 데이터를 가져옴
 
-  //이제 이걸 클라이언트에서 가져온 score랑 비교를 해야된다.
+  // 클라이언트와 서버 점수 비교
   if (serverScore !== score) {
-    console.error(`클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`);
-    return;
+    throw new Error(`점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`);
   }
-  console.log(`serverScore: ${serverScore} clientScore: ${score}`);
 
-  // 남은 골드 계산
-  const gold = getGold(userId); // 클라이언트에서 가져온 골드
-
-  const serverGold = gold[gold.length - 1]?.gold || 0; // 최신 골드가 없으면 0 반환
-
-  //이걸 left gold하고 비교
+  // 클라이언트와 서버 골드 비교
   if (serverGold !== leftGold) {
-    console.error(`클라이언트 골드 ${leftGold}와 서버 골드 ${serverGold}가 다릅니다. ${serverGold - leftGold} 차이가 납니다.`);
-    return;
+    throw new Error(`골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`);
   }
 
-  // 모든 검증이 끝났으면 골드와 스코어를 더해주고 반환
-  let finalScore = serverScore + score;
-  console.log("finalScore", finalScore);
+  // 최종 점수 계산
+  const finalScore = serverScore + serverGold;
 
-
-  // 모든 검증이 끝났으면 userid와 스코어와 leftGold 저장 db에 저장하고 싶은데 아직 어떻게 저장해야 된다 redis로 저장.
   return {
     status: "success",
-    message: "게임이 성공적으로 종료되었습니다",
+    message: "게임이 성공적으로 종료되었습니다.",
     score: finalScore,
     details: {
       userId,
@@ -90,6 +83,7 @@ export const gameEnd = (userId, payload) => {
     },
   };
 };
+
 
 /* Game Save 13 */
 export const gameSave = (userId, payload) => {

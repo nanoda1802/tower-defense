@@ -1,9 +1,3 @@
-import { getGameAssets } from "../inits/assets.js";
-import { getHeadquater, setHeadquater } from "../models/headquater.model.js";
-import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
-// x1000 y300 베이스 좌표
-// 1000을 넘으면 총돌
-// 헤드퀸터 충돌 처리
 export const collideHandler = (userid, payload) => {
   const { monsters } = getGameAssets();
   const { monsterId, monsterIndex, monsterX, monsterY, timestamp } = payload;
@@ -17,25 +11,38 @@ export const collideHandler = (userid, payload) => {
 
   const tolerance = 10; // 허용 오차 범위 설정
 
+  // 몬스터가 본부에 충돌했을 때 처리
   if (Math.abs(monsterX - currentMonsterX) <= tolerance) {
-    const monsterAttack = monsters.data.find(
-      (monster) => monster.id === monsterId,
-    ).attack;
+    // 몬스터의 공격력 추출
+    const monster = monsters.data.find(
+      (monster) => monster.id === monsterId
+    );
+    const monsterAttack = monster.attack;
 
-    // 최신 HP 가져오기
-    const headquater = getHeadquater(userid); // 해당 사용자의 최신 HP 가져오기
-    const currentHp =
-      headquater.length > 0 ? headquater[headquater.length - 1].hp : 0; // 최신 HP
+    // 최신 본부 HP 가져오기
+    const headquater = getHeadquater(userid); // 해당 사용자의 본부 HP 가져오기
+    const currentHp = headquater.length > 0 ? headquater[headquater.length - 1].hp : 0;
 
-    // 플레이어 HP 감소 로직 추가
-    const newHp = currentHp - monsterAttack; // 몬스터 공격력만큼 HP 감소
+    // 플레이어 본부 HP 감소 로직 (HP가 0 미만이 되지 않도록 제한)
+    const newHp = Math.max(0, currentHp - monsterAttack); // 최소 0으로 제한
 
-    // 업데이트된 HP를 set으로 저장
-    setHeadquater(userid, newHp, Date.now()); // 새로운 HP와 타임스탬프 저장
+    // 업데이트된 HP를 본부에 저장
+    setHeadquater(userid, newHp, Date.now()); // 새로운 HP 저장
+
+    // 반환값으로 newHp를 사용할 경우
+    return newHp; // 만약 호출한 곳에서 newHp 값을 사용하려면 반환할 수 있음
   } else {
-    const difference = monsterX - currentMonsterX; // 차이 계산
+    // 차이를 계산하여 오류 메시지에 추가
+    const difference = monsterX - currentMonsterX;
+
+    // 오류 메시지에 더 많은 디버깅 정보를 포함
     throw new Error(
-      `몬스터의 클라이언트 좌표: ${monsterX}, 서버 좌표: ${currentMonsterX}. 차이: ${difference}`,
-    ); // 좌표와 차이를 포함한 오류 메시지
+      `몬스터 충돌 오류: 
+      몬스터 ID: ${monsterId}, 
+      클라이언트 좌표: ${monsterX}, 
+      서버 계산 좌표: ${currentMonsterX}, 
+      차이: ${difference}, 
+      타임스탬프: ${timestamp}`
+    );
   }
 };
