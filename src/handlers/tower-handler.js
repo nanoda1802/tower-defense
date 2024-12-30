@@ -2,7 +2,7 @@ import { getGameAssets } from '../inits/assets.js';
 import { PAWN_TOWER_COST, SPECIAL_TOWER_COST, TOWER_TYPE_PAWN, TOWER_TYPE_SPECIAL, MONSTER_TYPE, BOSS_TYPE, TOWER_COLOR_BLACK, TOWER_COLOR_RED } from '../constants.js';
 import { getTower, setTower, removeTower, upgradeTower, getRemoveTower } from '../models/tower-model.js';
 import { getGold, setGold } from '../models/gold-model.js';
-import { getAliveBosses, getAliveMonsters, setDeathMonsters, setDeathBosses, getDeathMonsters, getDeathBosses } from '../models/monster-model.js';
+import { getAliveMonsters } from '../models/monster-model.js';
 
 const TOWER_TYPE_BUFF = 'buffer';
 const BUFF_VALUE = 50;
