@@ -2,14 +2,12 @@ import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
-import { getDeathMonsters, getDeathBosses } from "../models/monster-model.js";
+import { getDeathMonsters} from "../models/monster-model.js";
 import { clearscore, getscore } from "../models/score-model.js";
 import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
 import {
   createAliveMonsters,
-  createDeathMonsters,
-  createAliveBosses,
-  createDeathBosses,
+  createDeathMonsters
 } from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
@@ -40,9 +38,9 @@ export const gameStart = (userId, payload) => {
   //죽은 몬스터 초기화
   createDeathMonsters(userId);
   //생존한 보스 초기화
-  createAliveBosses(userId);
+  // createAliveBosses(userId);
   //죽은 보스 초기화
-  createDeathBosses(userId);
+  // createDeathBosses(userId);
   return { status: "success", message: "Game Started!!", gold: initGold };
 };
 

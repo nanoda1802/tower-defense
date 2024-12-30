@@ -6,35 +6,35 @@
       "id": 11,
       "monster_id": 101,
       "boss_id": 201,
-      "monster_cnt": 10,
+      "monster_cnt": 11,
       "all_kill_score": 100
     },
     {
       "id": 12,
       "monster_id": 102,
       "boss_id": 202,
-      "monster_cnt": 20,
+      "monster_cnt": 21,
       "all_kill_score": 200
     },
     {
       "id": 13,
       "monster_id": 103,
       "boss_id": 203,
-      "monster_cnt": 30,
+      "monster_cnt": 31,
       "all_kill_score": 300
     },
     {
       "id": 14,
       "monster_id": 104,
       "boss_id": 204,
-      "monster_cnt": 40,
+      "monster_cnt": 41,
       "all_kill_score": 400
     },
     {
       "id": 15,
       "monster_id": 105,
       "boss_id": 205,
-      "monster_cnt": 50,
+      "monster_cnt": 51,
       "all_kill_score": 500
     }
   ]
