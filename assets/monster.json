@@ -5,6 +5,7 @@
     {
       "id": 101,
       "health": 10,
+      "type": "monster",
       "attack": 1,
       "speed": 2,
       "gold": 5,
@@ -13,6 +14,7 @@
     {
       "id": 102,
       "health": 20,
+      "type": "monster",
       "attack": 2,
       "speed": 2,
       "gold": 10,
@@ -21,6 +23,7 @@
     {
       "id": 103,
       "health": 30,
+      "type": "monster",
       "attack": 3,
       "speed": 2,
       "gold": 15,
@@ -29,6 +32,7 @@
     {
       "id": 104,
       "health": 40,
+      "type": "monster",
       "attack": 4,
       "speed": 2,
       "gold": 20,
