@@ -2,4 +2,4 @@
 node_modules
 yarn.lock
 .prettierrc
-package-lock.json 
+package-lock.json
