@@ -9,6 +9,7 @@ export const createGold = (userId) => {
 export const getGold = (userId) => {
   return golds[userId];
 };
+
 export const setGold = (userId, sumGold, changeGold, desc, timestamp) => {
   /***
    * sumGold    총 보유 골드

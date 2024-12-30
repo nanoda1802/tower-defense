@@ -29,6 +29,7 @@ let monsterSpawnInterval = 200; // 몬스터 생성 주기
 let monsters = [];
 let towers = [];
 let monsterPath;
+let isDestroyed = false;
 
 let score = 0; // 게임 점수
 let highScore = 0; // 기존 최고 점수
@@ -175,6 +176,7 @@ function spawnMonster(currentWave) {
             res.monsterIndex,
           ),
         );
+        wave.isKillBoss = false;
         monsterIndex = 0;
       } else if (!res.isBoss) {
         monsters.push(
@@ -202,7 +204,7 @@ async function gameLoop() {
   // [1] 배경과 경로, 웨이브 최신화
   drawMap(monsterPath);
   monsterSpawnInterval -= 1;
-  if (!wave.waveChange && monsterSpawnInterval <= 0) {
+  if (wave.isKillBoss && monsterSpawnInterval <= 0) {
     spawnMonster(wave.wave);
     monsterSpawnInterval = 200;
   }
@@ -225,7 +227,6 @@ async function gameLoop() {
   HQ.draw(ctx, baseImage);
 
   // [5] 몬스터 이동과 게임오버 판정 체크
-  let isDestroyed;
   for (let i = monsters.length - 1; i >= 0; i--) {
     const monster = monsters[i];
     wave.update(monster.index);
@@ -252,13 +253,6 @@ async function gameLoop() {
           }
         });
       }
-      // [A-2] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
-      if (isDestroyed) {
-        // sendEvent(12, {});
-        alert("Game Over!!");
-        location.reload(); // 새로고침
-        return; // 루프 종료
-      }
       // [6] 몬스터 그리기
       monster.draw(ctx);
     } else if (monster.currentHp <= 0 && !monster.isEventProcessing) {
@@ -282,12 +276,34 @@ async function gameLoop() {
           monsters.splice(i, 1);
           wave.targetKillCount -= 1;
           wave.update(monster.index);
-          console.log("대체 워째서... ", monster.index, monster.id);
         } else {
           alert(`처치 처리 실패!! : ${res.message}`);
         }
       });
     }
+  }
+  // [7] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
+  if (isDestroyed) {
+    sendEvent(12, {
+      timestamp: Date.now(),
+      score,
+      leftGold: userGold,
+    }).then((res) => {
+      alert(`Game Over!! ${res.message}`);
+      location.reload(); // 새로고침
+      return; // 루프 종료
+    });
+  }
+  if (wave.isClear) {
+    sendEvent(12, {
+      timestamp: Date.now(),
+      score,
+      leftGold: userGold,
+    }).then((res) => {
+      alert(`Game Clear!! ${res.message}`);
+      location.reload(); // 새로고침
+      return; // 루프 종료
+    });
   }
   // [7] (수정 예정) 상태 정보 표시
   ctx.font = "25px Times New Roman";

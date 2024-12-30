@@ -2,7 +2,7 @@ import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave, setWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
-import { clearScore, getScore } from "../models/score-model.js";
+import { clearScore, getScore, setScore } from "../models/score-model.js";
 import {
   clearHeadquarter,
   setHeadquarter,
@@ -27,11 +27,11 @@ export const gameStart = (userId, payload) => {
   clearRemoveTower(userId);
   // [4] 스코어 초기화
   clearScore(userId);
+  setScore(userId, 0, 0, payload.timestamp);
   // [5] hQ 채력 초기화
   clearHeadquarter(userId);
   setHeadquarter(userId, 10, payload.timestamp);
   const initHp = getHeadquarter(userId)[0].hp;
-  console.log(initHp);
   // [6] 몬스터 초기화
   clearAliveMonsters(userId);
   clearDeathMonsters(userId);
@@ -62,8 +62,8 @@ export const gameEnd = (userId, payload) => {
   const scores = getScore(userId); // 서버에서 점수 데이터
   const gold = getGold(userId); // 서버에서 골드 데이터
 
-  const serverScore = scores[scores.length - 1]?.sumScore || 0; // 최신 점수 가져오기
-  const serverGold = gold[gold.length - 1]?.gold || 0; // 최신 골드 가져오기
+  const serverScore = scores[scores.length - 1].sumScore || 0; // 최신 점수 가져오기
+  const serverGold = gold[gold.length - 1].gold || 0; // 최신 골드 가져오기
 
   // 클라이언트와 서버 점수 비교
   if (serverScore !== score) {
