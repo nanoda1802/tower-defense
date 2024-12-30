@@ -1,10 +1,8 @@
 import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
 import { collideHandler } from "./headquater-handler.js";
 import {
-  createBossHandler,
   createMonsterHandler,
   deathMonsterHandler,
-  deathBossHandler,
 } from "./monster-handler.js";
 import {
   getTowerHandler,
@@ -23,9 +21,7 @@ const handlerMappings = {
   14: gameLoad,
   21: collideHandler,
   31: createMonsterHandler, // 해써
-  32: createBossHandler,
-  33: deathMonsterHandler, // 해써
-  34: deathBossHandler,
+  32: deathMonsterHandler, // 해써
   41: getTowerHandler, // 해써
   42: sellTowerHandler, // 해써
   43: upgradeTowerHandler, // 해써
