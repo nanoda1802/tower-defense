@@ -1,98 +1,134 @@
-// import { getGameAssets } from "../inits/assets.js";
+import { getGameAssets } from "../inits/assets.js";
 
-const waves = {
-  tester: {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 20,
-    bossSpawned: false,
-  },
-};
-const removeWaves = { tester: [] };
-
-export const createWave = (userId) => {
-  waves[userId] = {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 0,
-    bossSpawned: false,
-  };
+// 웨이브 상태 상수
+export const WaveState = {
+  WAITING: "WAITING",
+  ACTIVE: "ACTIVE",
+  BOSS: "BOSS",
+  COMPLETE: "COMPLETE",
 };
 
-export const getWave = (userId) => {
-  return waves[userId];
-};
-
-export const clearWave = (userId) => {
-  waves[userId] = {
-    currentWaveIndex: 0,
-    isActive: false,
-    remainingMonsters: 0,
-    bossSpawned: false,
-  };
-};
-
-export const clearRemoveWave = (userId) => {
-  removeWaves[userId] = [];
-};
-
-export const validateWave = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
+class WaveModel {
+  constructor() {
+    this.waves = new Map();
+    this.assets = getGameAssets();
   }
-  return { valid: true, isActive: wave.isActive };
-};
 
-export const validateMonster = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
+  // 웨이브 생성
+  createWave(userId) {
+    this.waves.set(userId, {
+      currentWaveIndex: 0,
+      state: WaveState.WAITING,
+      remainingMonsters: 0,
+      currentMonster: null,
+      currentBoss: null,
+      bossKilled: false,
+    });
   }
-  if (!wave.isActive) {
-    return { valid: false, message: "진행 중인 웨이브가 없습니다.", isActive: false };
-  }
-  if (wave.remainingMonsters <= 0) {
-    return { valid: false, message: "처치할 몬스터가 없습니다.", isActive: true };
-  }
-  return { valid: true, isActive: true };
-};
 
-export const validateBoss = (userId) => {
-  const wave = waves[userId];
-  if (!wave) {
-    return { valid: false, message: "웨이브가 존재하지 않습니다.", isActive: false };
-  }
-  if (!wave.isActive) {
-    return { valid: false, message: "진행 중인 웨이브가 없습니다.", isActive: false };
-  }
-  if (!wave.bossSpawned) {
-    return { valid: false, message: "보스가 아직 등장하지 않았습니다.", isActive: true };
-  }
-  return { valid: true, isActive: true };
-};
+  // 현재 웨이브 데이터 가져오기
+  getCurrentWaveData(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave) return null;
 
-export const isWaveComplete = (userId) => {
-  const wave = waves[userId];
-  return wave.remainingMonsters === 0 && wave.bossSpawned;
-};
+    return this.assets.waves.data[wave.currentWaveIndex];
+  }
 
-// 다음 웨이브 진행
-export const progressToNextWave = (userId) => {
-  const wave = waves[userId];
-  if (wave.currentWaveIndex < 4) {
-    // wave.json의 데이터 길이 - 1
-    wave.currentWaveIndex++;
-    wave.isActive = false;
-    wave.bossSpawned = false;
+  // 현재 몬스터 데이터 가져오기
+  getCurrentMonsterData(userId) {
+    const waveData = this.getCurrentWaveData(userId);
+    if (!waveData) return null;
+
+    return this.assets.monsters.data.find((monster) => monster.id === waveData.monster_id);
+  }
+
+  // 현재 보스 데이터 가져오기
+  getCurrentBossData(userId) {
+    const waveData = this.getCurrentWaveData(userId);
+    if (!waveData) return null;
+
+    return this.assets.bosses.data.find((boss) => boss.id === waveData.boss_id);
+  }
+
+  // 웨이브 시작
+  startWave(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave) return false;
+
+    const waveData = this.getCurrentWaveData(userId);
+    if (!waveData) return false;
+
+    const monsterData = this.getCurrentMonsterData(userId);
+    if (!monsterData) return false;
+
+    wave.state = WaveState.ACTIVE;
+    wave.remainingMonsters = waveData.monster_cnt;
+    wave.currentMonster = monsterData;
+    wave.currentBoss = null;
+    wave.bossKilled = false;
+
     return true;
   }
-  return false;
-};
 
-export const startWave = (userId, waveData) => {
-  const wave = waves[userId];
-  wave.isActive = true;
-  wave.remainingMonsters = waveData.monster_cnt;
-  wave.bossSpawned = false;
-};
+  // 몬스터 처치 처리
+  handleMonsterKill(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave || wave.state !== WaveState.ACTIVE) return false;
+
+    wave.remainingMonsters--;
+
+    // 모든 몬스터 처치 완료시 보스 단계로
+    if (wave.remainingMonsters <= 0) {
+      const bossData = this.getCurrentBossData(userId);
+      if (!bossData) return false;
+
+      wave.state = WaveState.BOSS;
+      wave.currentBoss = bossData;
+    }
+
+    return true;
+  }
+
+  // 보스 처치 처리
+  handleBossKill(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave || wave.state !== WaveState.BOSS) return false;
+
+    wave.bossKilled = true;
+    wave.state = WaveState.COMPLETE;
+
+    return true;
+  }
+
+  // 다음 웨이브로 진행
+  progressToNextWave(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave || wave.state !== WaveState.COMPLETE || !wave.bossKilled) return false;
+
+    const nextWaveExists = wave.currentWaveIndex < this.assets.waves.data.length - 1;
+    if (nextWaveExists) {
+      wave.currentWaveIndex++;
+      wave.state = WaveState.WAITING;
+      wave.bossKilled = false;
+      return true;
+    }
+    return false;
+  }
+
+  // 웨이브 상태 조회
+  getWaveStatus(userId) {
+    const wave = this.waves.get(userId);
+    if (!wave) return null;
+
+    return {
+      waveNumber: wave.currentWaveIndex + 1,
+      state: wave.state,
+      remainingMonsters: wave.remainingMonsters,
+      currentMonster: wave.currentMonster,
+      currentBoss: wave.currentBoss,
+      bossKilled: wave.bossKilled,
+    };
+  }
+}
+
+export const waveModel = new WaveModel();
