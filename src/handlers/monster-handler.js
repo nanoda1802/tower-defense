@@ -1,10 +1,10 @@
 import { getGameAssets } from "../inits/assets.js";
-import { 
-  setAliveMonsters, 
-  getAliveMonsters, 
+import {
+  setAliveMonsters,
+  getAliveMonsters,
   removeAliveMonsters,
   setDeathMonsters,
-  } from "../models/monster-model.js";
+} from "../models/monster-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
 import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 import { getscore, setscore } from "../models/score-model.js";
@@ -40,10 +40,21 @@ export const createMonsterHandler = (userId, payload) => {
     const monsterSpeed = monster.speed;
     const monsterGold = monster.gold;
     const monsterScore = monster.score;
-    setAliveMonsters(userId, timestamp, monsterId, monsterIndex, monsterHealth, monsterAttack, monsterSpeed, monsterGold, monsterScore);
+    setAliveMonsters(
+      userId,
+      timestamp,
+      monsterId,
+      monsterIndex,
+      monsterHealth,
+      monsterAttack,
+      monsterSpeed,
+      monsterGold,
+      monsterScore,
+    );
     return {
       status: "success",
       message: "몬스터 생성 성공",
+      monsterId,
       monsterHealth,
       monsterAttack,
       monsterSpeed,
@@ -84,7 +95,16 @@ export const createBossHandler = (userId, payload) => {
     const bossSpeed = boss.speed;
     const bossGold = boss.gold;
     const bossScore = boss.score;
-    setAliveBosses(userId, timestamp, bossId, bossHealth, bossAttack, bossSpeed, bossGold, bossScore);
+    setAliveBosses(
+      userId,
+      timestamp,
+      bossId,
+      bossHealth,
+      bossAttack,
+      bossSpeed,
+      bossGold,
+      bossScore,
+    );
   } catch (error) {
     throw new Error("Failed to create boss !! " + error.message);
   }
@@ -94,11 +114,25 @@ export const createBossHandler = (userId, payload) => {
 export const deathMonsterHandler = (userId, payload) => {
   try {
     const { monsters } = getGameAssets();
-    const { aliveMonsters } = getAliveMonsters();
-    const { timestamp, monsterId, monsterIndex, monsterHealth, monsterGold, monsterScore } = payload; //payloal 정보
-
-     //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
-    const monster = aliveMonsters.find((monster) => monster.id === monsterId && monster.index === monsterIndex);
+    const aliveMonsters = getAliveMonsters(userId);
+    const {
+      timestamp,
+      monsterId,
+      monsterIndex,
+      monsterHealth,
+      monsterGold,
+      monsterScore,
+    } = payload; //payloal 정보
+    console.log("잘 되고 있음???", aliveMonsters);
+    //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
+    console.log("죽을 때 무슨 일 id ???", monsterId);
+    console.log("무슨 일 index ???", monsterIndex);
+    const monster = aliveMonsters.find((monster) => {
+      return (
+        monster.monsterId === monsterId && monster.monsterIndex === monsterIndex
+      );
+    });
+    console.log("무슨 일 ???", monster);
     if (!monster) {
       return { status: "fail", message: "Invalid monster ID or index" };
     }
@@ -110,7 +144,7 @@ export const deathMonsterHandler = (userId, payload) => {
 
     //살아있는 몬스터 데이터 삭제
     removeAliveMonsters(userId, monsterId, monsterIndex);
-    
+
     //죽은 몬스터 데이터 저장
     setDeathMonsters(
       userId,
@@ -127,31 +161,28 @@ export const deathMonsterHandler = (userId, payload) => {
     const usergold = getGold(userId);
 
     //해당 몬스터의 골드량이 맞는지 검증
-    const rightGold = monsters.data.find((monster) => monster.id === monsterId).gold;
-    if(rightGold !== monsterGold) {
+    const rightGold = monsters.data.find(
+      (monster) => monster.id === monsterId,
+    ).gold;
+    if (rightGold !== monsterGold) {
       return { status: "fail", message: "Invalid monster gold" };
     }
 
     setGold(userId, usergold + monsterGold, monsterGold, "KILL", timestamp);
-
-    
 
     //점수 증가
     //현재 보유 점수 조회
     const userscore = getscore(userId);
 
     //해당 몬스터의 점수가 맞는지 검증
-    const rightScore = monsters.data.find((monster) => monster.id === monsterId).score;
-    if(rightScore !== monsterScore) {
+    const rightScore = monsters.data.find(
+      (monster) => monster.id === monsterId,
+    ).score;
+    if (rightScore !== monsterScore) {
       return { status: "fail", message: "Invalid monster score" };
     }
 
-    setscore(
-      userId, 
-      userscore + monsterScore,
-      monsterScore,
-      timestamp
-    );
+    setscore(userId, userscore + monsterScore, monsterScore, timestamp);
 
     return {
       status: "success",
@@ -164,7 +195,6 @@ export const deathMonsterHandler = (userId, payload) => {
   } catch (error) {
     throw new Error("Failed to death monster !! " + error.message);
   }
-
 };
 
 /* deathBossHandler 34 */

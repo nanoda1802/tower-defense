@@ -5,7 +5,12 @@ import { clearTower, clearRemoveTower } from "../models/tower-model.js";
 import { getDeathMonsters, getDeathBosses } from "../models/monster-model.js";
 import { clearscore, getscore } from "../models/score-model.js";
 import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
-import { createAliveMonsters, createDeathMonsters, createAliveBosses, createDeathBosses } from "../models/monster-model.js";
+import {
+  createAliveMonsters,
+  createDeathMonsters,
+  createAliveBosses,
+  createDeathBosses,
+} from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -19,7 +24,7 @@ export const gameStart = (userId, payload) => {
   clearGold(userId);
   // 초기 골드 설정 지금은 편의상 100으로 설정
   setGold(userId, 100, 0, "start", Date.now());
-  console.log("웨 않됨???????", userId);
+  const initGold = getGold(userId)[0].gold;
   //타워 초기화
   clearTower(userId);
   //제거 타워 초기화
@@ -38,7 +43,7 @@ export const gameStart = (userId, payload) => {
   createAliveBosses(userId);
   //죽은 보스 초기화
   createDeathBosses(userId);
-  return { status: "success", message: "Game Started!!" };
+  return { status: "success", message: "Game Started!!", gold: initGold };
 };
 
 /* Game End 12 */
@@ -51,7 +56,11 @@ export const gameEnd = (userId, payload) => {
   const { timestamp: gameEndTime, score, leftGold } = payload;
 
   // payload 타입 검사
-  if (typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
+  if (
+    typeof payload.timestamp !== "number" ||
+    typeof payload.score !== "number" ||
+    typeof payload.leftGold !== "number"
+  ) {
     throw new Error("잘못된 payload 형식");
   }
 
@@ -62,7 +71,9 @@ export const gameEnd = (userId, payload) => {
 
   //이제 이걸 클라이언트에서 가져온 score랑 비교를 해야된다.
   if (serverScore !== score) {
-    console.error(`클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`);
+    console.error(
+      `클라이언트 점수 ${score}와 서버 점수 ${serverScore}가 다릅니다. ${score - serverScore} 차이가 납니다.`,
+    );
     return;
   }
   console.log(`serverScore: ${serverScore} clientScore: ${score}`);
@@ -74,7 +85,9 @@ export const gameEnd = (userId, payload) => {
 
   //이걸 left gold하고 비교
   if (serverGold !== leftGold) {
-    console.error(`클라이언트 골드 ${leftGold}와 서버 골드 ${serverGold}가 다릅니다. ${serverGold - leftGold} 차이가 납니다.`);
+    console.error(
+      `클라이언트 골드 ${leftGold}와 서버 골드 ${serverGold}가 다릅니다. ${serverGold - leftGold} 차이가 납니다.`,
+    );
     return;
   }
 

@@ -4,9 +4,9 @@ import { Tower } from "./tower.js";
 import { Wave } from "./wave.js";
 import {
   backgroundImage,
-  blackTowerImages,
-  redTowerImages,
-  jokerImage,
+  blackPawnImages,
+  redPawnImages,
+  specialImages,
   baseImage,
   pathImage,
   monsterImages,
@@ -25,10 +25,9 @@ let HQ; // 기지 객체
 let baseHp = 0; // 기지 체력
 let wave = 0;
 
-let towerCost = 0; // 타워 구입 비용
 let monsterSpawnInterval = 1500; // 몬스터 생성 주기
-const monsters = [];
-const towers = [];
+let monsters = [];
+let towers = [];
 let monsterPath;
 
 let score = 0; // 게임 점수
@@ -96,8 +95,10 @@ function placeHQ() {
 }
 /* 타워 설치 */
 function placeNewTower(type, color) {
+  // [1] 클릭된 격자의 기준 좌표 가져옴
   if (selectedSpot) {
     const { curX: x, curY: y } = selectedSpot;
+    // [2] 서버에 메세지 전송
     sendEvent(41, {
       type,
       color,
@@ -105,32 +106,48 @@ function placeNewTower(type, color) {
       positionY: y,
       timestamp: Date.now(),
     }).then((res) => {
-      const { positionX: x, positionY: y, type, data } = res;
-      const towerNum = data.id;
-      // 타워 생성
-      let towerImage;
-      if (color === "black") {
-        towerImage = blackTowerImages[towerNum - 1001];
-      } else if (color === "red") {
-        towerImage = redTowerImages[towerNum - 1000];
+      // [3] 검증 성공 시 클라에 적용
+      if (res.status === "success") {
+        const { positionX: x, positionY: y, type, data } = res;
+        const towerNum = data.id;
+        // [4] 응답 받은 타워 정보 적용해 설치
+        let towerImage;
+        if (type === "pawn" && color === "black") {
+          towerImage = blackPawnImages[0];
+        } else if (type === "pawn" && color === "red") {
+          towerImage = redPawnImages[0];
+        } else {
+          towerImage = specialImages[towerNum - 2001];
+        }
+        const tower = new Tower(
+          x,
+          y,
+          towerImage,
+          towerNum,
+          type,
+          data.attack,
+          data.attack_speed,
+          data.range,
+        );
+        towers.push(tower);
+        tower.draw(ctx);
+        // [5] 타워 비용만큼 골드 차감
+        userGold -= res.cost;
+        // [6] 클릭 위치 초기화
+        selectedSpot = null;
       } else {
-        towerImage = jokerImage;
+        alert(`설치 실패!! : ${res.message}`);
       }
-      towerCost = type === "pawn" ? 10 : 30;
-      const tower = new Tower(x, y, towerCost, towerImage, towerNum, type);
-      towers.push(tower);
-      tower.draw(ctx);
-      // 생성 후 상태 초기화
-      selectedSpot = null;
     });
   } else {
-    alert("타워를 배치할 위치를 먼저 선택하세요.");
+    alert("설치할 위치 먼저 선택하세요!!");
   }
 }
 /* 몬스터 생성 */
 let monsterIndex = 0;
 function spawnMonster() {
   let currentWave = wave.wave;
+  // [1] 서버에 메세지 보냄
   sendEvent(31, {
     timestamp: Date.now(),
     waveId: waveTable[currentWave - 1].id,
@@ -138,21 +155,24 @@ function spawnMonster() {
     monsterIndex,
   }).then((res) => {
     if (res.status === "success") {
+      // [2] 몬스터생성
       monsters.push(
         new Monster(
           monsterPath,
           monsterImages[currentWave - 1],
+          res.monsterId,
           res.monsterHealth,
           res.monsterAttack,
           res.monsterSpeed,
           res.monsterGold,
           res.monsterScore,
           currentWave,
+          monsterIndex,
         ),
       );
-      monsterIndex += 1;
-      console.log("저쪽 신사분이 주문하신 인덱스입니다", monsterIndex);
+      monsterIndex += 1; // [3] 인덱스 증가
     }
+    // [4] 웨이브 바뀌면 인덱스 초기화
     if (monsterIndex === waveTable[currentWave - 1].monster_cnt) {
       monsterIndex = 0;
     }
@@ -173,9 +193,7 @@ async function gameLoop() {
         Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
       );
       if (distance < tower.range) {
-        const { gold: goldReward, score: scoreReward } = tower.attack(monster);
-        userGold += goldReward;
-        score += scoreReward;
+        tower.attack(monster);
       }
     });
   });
@@ -190,14 +208,14 @@ async function gameLoop() {
     // [5-1 A] 몬스터가 죽지 않았다면 계속 전진
     if (monster.currentHp > 0) {
       monster.move();
-      // [5-2 A] 몬스터가 HQ에 닿았다면 HQ 체력 감소, 만약 0 이하면 게임 오버 조건 ON
+      // [A-1] 몬스터가 HQ에 닿았다면 HQ 체력 감소, 만약 0 이하면 게임 오버 조건 ON
       if (monster.x >= HQ.x) {
         // sendEvent()
         isDestroyed = monster.collideWith(HQ);
         monsters.splice(i, 1); // 닿은 몬스터 제거
         wave.targetKillCount -= 1;
       }
-      // [5-3 A] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
+      // [A-2] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
       if (isDestroyed) {
         // sendEvent(12, {});
         alert("Game Over!!");
@@ -206,11 +224,30 @@ async function gameLoop() {
       }
       // [6] 몬스터 그리기
       monster.draw(ctx);
-    } else {
+    } else if (monster.currentHp <= 0 && !monster.isEventProcessing) {
       // [5-1 B] 몬스터가 죽었다면 배열에서 제거
-      // sendEvent()
-      monsters.splice(i, 1);
-      wave.targetKillCount -= 1;
+      // [B-1] 서버에 메세지 보냄
+      monster.isEventProcessing = true;
+      sendEvent(33, {
+        timestamp: Date.now(),
+        monsterId: monster.id,
+        monsterIndex: monster.index,
+        monsterHealth: monster.currentHp,
+        monsterGold: monster.gold,
+        monsterScore: monster.score,
+      }).then((res) => {
+        if (res.status === "success") {
+          const { monsterGold: goldReward, monsterScore: scoreReward } = res;
+          // [B-2] 응답받은 보상 클라에 적용
+          userGold += goldReward;
+          score += scoreReward;
+          // [B-3] 몬스터 제거 및 웨이브 목표 킬 수 차감
+          monsters.splice(i, 1);
+          wave.targetKillCount -= 1;
+        } else {
+          alert(`처치 처리 실패!! : ${res.message}`);
+        }
+      });
     }
   }
   // [7] (수정 예정) 상태 정보 표시
@@ -227,13 +264,15 @@ async function gameLoop() {
   // [8] 프레임 재귀 실행
   requestAnimationFrame(gameLoop);
 }
-
 /* 게임 첫 실행 */
 function initGame() {
   if (isInitGame) {
     return; // [1] 이미 실행된 상태면 즉시 탈출
   }
-  // [2] 필요한 요소들 준비
+  // [2] 필요한 요소들 준비 및 초기화
+  monsters = [];
+  towers = [];
+  score = 0;
   monsterPath = generatePath(); // 몬스터 경로 준비
   drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
   placeHQ(); // 기지 배치
@@ -245,7 +284,11 @@ function initGame() {
   isInitGame = true;
   gameLoop();
   // [5] 서버에 게임 시작 알림
-  sendEvent(11, { timestamp: Date.now() });
+  sendEvent(11, { timestamp: Date.now() }).then((res) => {
+    if (res.status === "success") {
+      userGold = res.gold;
+    }
+  });
 }
 /* 이미지 로드 후 서버와 소켓 연결 */
 let userId = null;
@@ -257,11 +300,13 @@ Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
-  new Promise((resolve) => (jokerImage.onload = resolve)),
-  ...blackTowerImages.map(
+  ...blackPawnImages.map(
     (img) => new Promise((resolve) => (img.onload = resolve)),
   ),
-  ...redTowerImages.map(
+  ...redPawnImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
+  ...specialImages.map(
     (img) => new Promise((resolve) => (img.onload = resolve)),
   ),
   ...monsterImages.map(
@@ -365,8 +410,7 @@ buyRedButton.addEventListener("click", () => {
 const getSpecialButton = createButton("특수 병사 뽑기", 90);
 document.body.appendChild(getSpecialButton);
 getSpecialButton.addEventListener("click", () => {
-  // sendEvent로 가챠 진행 후 그 응답을 placeNewTower의 매개변수로 투입
-  placeNewTower("special", "none");
+  placeNewTower("special");
 });
 
 /* 타워 정보 창 생성 */
@@ -388,6 +432,7 @@ function showTowerInfo(tower) {
   towerInfo.innerHTML = `
     <p>타워 위치: (${tower.x}, ${tower.y})</p>
     <p>타워 공격력: ${tower.attackPower}</p>
+    <p>타워 공격속도: ${tower.attackSpeed}</p>
     <p>타워 범위: ${tower.range}</p>
     <button id="sellTowerButton">판매</button>
     <button id="upgradeTowerButton">승급</button>
@@ -410,8 +455,9 @@ function hideTowerInfo() {
   towerInfoPanel.style.display = "none";
 }
 
-/* 타워 판매 (검증 실패 시 처리도 해야 함 alert 띄우기) */
+/* 타워 판매 */
 function sellTower(tower) {
+  // [1] 서버에 메세지 보냄
   sendEvent(42, {
     type: tower.type,
     towerId: tower.id,
@@ -419,18 +465,27 @@ function sellTower(tower) {
     positionY: tower.y,
     timestamp: Date.now(),
   }).then((res) => {
-    const index = towers.indexOf(tower);
-    if (index > -1) {
-      userGold += res.price; // [1] 가격만큼 골드 획득
-      towers.splice(index, 1); // [2] 타워 목록에서 제거
-      hideTowerInfo(); // [3] 정보 패널 다시 숨김
-      console.log("얼마 얻었는지 리터럴로 알려주기 res.price로");
+    if (res.status === "success") {
+      const index = towers.indexOf(tower);
+      if (index > -1) {
+        userGold += res.price; // [2] 응답받은 가격만큼 골드 획득
+        towers.splice(index, 1); // [3] 타워 목록에서 제거
+      }
+    } else {
+      alert(`판매 실패!! : ${res.message}`);
     }
+    hideTowerInfo(); // [4] 정보 패널 다시 숨김
   });
 }
 
-/* 타워 승급 (검증 실패 시 처리도 해야 함) */
+/* 타워 승급 */
 function upgradeTower(tower) {
+  const currentImageNum = tower.image.src.at(-5);
+  if (currentImageNum === "9") {
+    alert("이미 최대로 승급된 병사입니다!!");
+    return;
+  }
+  // [1] 서버에 메세지 보냄
   sendEvent(43, {
     type: tower.type,
     towerId: tower.id,
@@ -438,14 +493,24 @@ function upgradeTower(tower) {
     positionY: tower.y,
     timestamp: Date.now(),
   }).then((res) => {
-    if (userGold >= res.cost) {
-      userGold -= res.cost; // [1] 승급 비용 차감
-      tower.attackPower += 10; // [2] 공격력 증가 (서버가 준 값으로 변경)
-      tower.range += 20; // [3] 범위 증가 (서버가 준 값으로 변경)
-      console.log("얼마 들었는지, 얼마나 강해졌는지 템플릿 리터럴로 보여주기");
-      showTowerInfo(tower); // 승급 후 갱신된 정보 표시
+    if (res.status === "success") {
+      const { cost, data, type } = res;
+      if (userGold >= cost) {
+        userGold -= cost; // [2] 승급 비용 차감
+        // [3] 타워 스탯 증가 (서버가 준 값으로 변경)
+        tower.attackPower = data.attack;
+        tower.attackSpeed = data.attack_speed;
+        tower.range = data.range;
+        // [4] 타워 이미지 변경 (매끄럽게 될 때 있고 안 될 때가 있다...)
+        if (type === "pawn" && data.color === "black") {
+          tower.image = blackPawnImages[+currentImageNum + 1];
+        } else if (type === "pawn" && data.color === "red") {
+          tower.image = redPawnImages[+currentImageNum + 1];
+        }
+        showTowerInfo(tower); // [5] 승급 후 갱신된 정보 표시
+      }
     } else {
-      alert("골드가 부족합니다!");
+      alert(`승급 실패!! : ${res.message}`);
     }
   });
 }
