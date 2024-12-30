@@ -123,16 +123,12 @@ export const deathMonsterHandler = (userId, payload) => {
       monsterGold,
       monsterScore,
     } = payload; //payloal 정보
-    console.log("잘 되고 있음???", aliveMonsters);
     //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
-    console.log("죽을 때 무슨 일 id ???", monsterId);
-    console.log("무슨 일 index ???", monsterIndex);
     const monster = aliveMonsters.find((monster) => {
       return (
         monster.monsterId === monsterId && monster.monsterIndex === monsterIndex
       );
     });
-    console.log("무슨 일 ???", monster);
     if (!monster) {
       return { status: "fail", message: "Invalid monster ID or index" };
     }

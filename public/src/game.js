@@ -182,7 +182,6 @@ function spawnMonster() {
 async function gameLoop() {
   // [1] 배경과 경로, 웨이브 최신화
   drawMap(monsterPath);
-  wave.update();
   // [3] 타워 그리기와 몬스터 공격 판정 체크
   towers.forEach((tower) => {
     tower.draw(ctx);
@@ -214,6 +213,7 @@ async function gameLoop() {
         isDestroyed = monster.collideWith(HQ);
         monsters.splice(i, 1); // 닿은 몬스터 제거
         wave.targetKillCount -= 1;
+        wave.update(monster.index);
       }
       // [A-2] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
       if (isDestroyed) {
@@ -244,6 +244,7 @@ async function gameLoop() {
           // [B-3] 몬스터 제거 및 웨이브 목표 킬 수 차감
           monsters.splice(i, 1);
           wave.targetKillCount -= 1;
+          wave.update(monster.index);
         } else {
           alert(`처치 처리 실패!! : ${res.message}`);
         }

@@ -1,10 +1,13 @@
 import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
-import { clearWave } from "../models/wave-model.js";
+import { clearWave, setWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
 import { clearscore, getscore } from "../models/score-model.js";
 import { clearHeadquater, setHeadquater } from "../models/headquater.model.js";
-import { createAliveMonsters } from "../models/monster-model.js";
+import {
+  createAliveMonsters,
+  createDeathMonsters,
+} from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -12,6 +15,7 @@ export const gameStart = (userId, payload) => {
   const { wave } = getGameAssets();
   // 해당 사용자의 이전 스테이지 정보 초기화
   clearWave(userId);
+  setWave(userId, 11, Date.now());
   // 첫 번째 스테이지(id: 1)로 설정하고 시작 시간 기록
   // setWave(userId, wave.data[0].id, payload.timestamp);
   // 골드 초기화
@@ -31,13 +35,19 @@ export const gameStart = (userId, payload) => {
   setHeadquater(userId, 100, payload.timestamp);
   //생존한 몬스터 초기화
   createAliveMonsters(userId);
+  createDeathMonsters(userId);
   return { status: "success", message: "Game Started!!", gold: initGold };
 };
 
 /* Game End 12 */
 export const gameEnd = (userId, payload) => {
   // payload 구조 및 타입 검사
-  if (!payload || typeof payload.timestamp !== "number" || typeof payload.score !== "number" || typeof payload.leftGold !== "number") {
+  if (
+    !payload ||
+    typeof payload.timestamp !== "number" ||
+    typeof payload.score !== "number" ||
+    typeof payload.leftGold !== "number"
+  ) {
     throw new Error("잘못된 payload 형식");
   }
 
@@ -52,12 +62,16 @@ export const gameEnd = (userId, payload) => {
 
   // 클라이언트와 서버 점수 비교
   if (serverScore !== score) {
-    throw new Error(`점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`);
+    throw new Error(
+      `점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`,
+    );
   }
 
   // 클라이언트와 서버 골드 비교
   if (serverGold !== leftGold) {
-    throw new Error(`골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`);
+    throw new Error(
+      `골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`,
+    );
   }
 
   // 최종 점수 계산
