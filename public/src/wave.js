@@ -1,4 +1,4 @@
-import { waveTable } from "./game.js ";
+import { waveTable, sendEvent } from "./game.js ";
 
 export class Wave {
   wave = 1;
@@ -20,7 +20,11 @@ export class Wave {
       }
     }
     if (this.waveChange) {
-      // sendEvent()
+      // sendEvent(51, {
+      //   currentWave: this.wave,
+      //   nextWave: this.wave + 1,
+      //   timestamp: Date.now(),
+      // });
       this.wave += 1;
       this.setWave();
     }

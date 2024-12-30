@@ -6,7 +6,6 @@ const registerHandler = (io) => {
     const userId = socket.user?.userId; // JWT에서 추출된 userId
 
     addUser({ userId, socketId: socket.id });
-    console.log("!!!register!!!", userId);
     handleConnection(socket, userId);
 
     //Event
