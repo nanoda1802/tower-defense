@@ -40,9 +40,12 @@ class WaveModel {
     const wave = this.waves.get(userId);
     if (!wave || wave.currentWaveIndex >= this.maxWaves) return null;
 
+    // wave.json의 데이터를 사용하여 현재 웨이브의 정보를 가져옴
+    const waveData = this.assets.wave.data.find((w) => w.id === 11 + wave.currentWaveIndex);
+
     return {
       wave_number: wave.currentWaveIndex + 1,
-      monster_cnt: 5, // 기본 몬스터 수 설정
+      monster_cnt: waveData.monster_cnt, // 고정값 대신 wave.json의 데이터 사용
     };
   }
 
