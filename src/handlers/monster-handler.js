@@ -96,7 +96,7 @@ export const deathMonsterHandler = (userId, payload) => {
       monsterHealth,
       monsterGold,
       monsterScore,
-    } = payload; //payloal 정보
+    } = payload; //payload 정보
     //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
     const monster = aliveMonsters.find((monster) => {
       return (
