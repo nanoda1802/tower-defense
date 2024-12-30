@@ -40,6 +40,7 @@
       <!-- <button id="registerButton">회원가입</button>
       <button id="loginButton">로그인</button> -->
       <button id="playButton">게임 플레이</button>
+      <button id="coopModeButton">협동 모드</button>
     </div>
     <canvas id="gameCanvas" width="1200" height="700"></canvas>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -102,6 +103,25 @@
         document.querySelector('.button-container').style.display = 'none';
         document.getElementById('gameCanvas').style.display = 'block';
         import('./src/game.js');
+      });
+
+      // 협동 모드 버튼 이벤트
+      document.getElementById('coopModeButton').addEventListener('click', () => {
+        // 버튼 컨테이너 숨기기
+        document.querySelector('.button-container').style.display = 'none';
+        // 게임 캔버스 표시
+        document.getElementById('gameCanvas').style.display = 'block';
+
+        // 협동 모드 초기화 - co-op-game.js 로드
+        import('./src/co-op-game.js')
+          .then((module) => {
+            module.initCoopWebSocket(); // WebSocket 연결 초기화
+            setTimeout(() => module.initCoopMode(), 100); // 약간의 지연 후 협동 모드 초기화
+          })
+          .catch((err) => {
+            console.error('협동 모드 로드 실패:', err);
+            alert('협동 모드를 로드하는 데 실패했습니다.');
+          });
       });
     </script>
   </body>
