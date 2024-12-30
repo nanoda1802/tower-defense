@@ -16,23 +16,23 @@ export const createMonsterHandler = (userId, payload) => {
     const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     //timestamp는 소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
 
-    //몬스터 정보 조회
+    // 몬스터 정보 조회
     const monster = monsters.data.find((monster) => monster.id === monsterId);
     if (!monster) {
       return { status: "fail", message: "Invalid monster ID" };
     }
 
-    //몬스터 출현 스테이지 검증
+    // 몬스터 출현 스테이지 검증
     const monsterWave = waves.data.find((wave) => wave.id === waveId);
     if (monsterWave.monster_id !== monsterId) {
       //waveId를 검증한 후 해당 monsterId와 payload의 monsterId 검증
       return { status: "fail", message: "Invalid monster ID" };
     }
 
-    //몬스터 개체수 검증
+    // 몬스터 개체수 검증
     if (monsterWave.monster_cnt <= monsterIndex) {
       return { status: "fail", message: "Invalid monster index" };
-    } //몬스터인덱스가 웨이브 숫자보다 높아지면 에러
+    } // 몬스터인덱스가 웨이브 숫자보다 높아지면 에러
 
     // 몬스터 정보 저장
     const monsterHealth = monster.health;
