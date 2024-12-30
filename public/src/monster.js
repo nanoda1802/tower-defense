@@ -43,7 +43,6 @@ export class Monster {
 
   collideWith(base) {
     const isDestroyed = base.takeDamage(this.attackPower);
-    this.currentHp;
     return isDestroyed;
   }
 

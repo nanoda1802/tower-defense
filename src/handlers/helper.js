@@ -9,6 +9,7 @@ import { getGameAssets } from "../inits/assets.js";
 import { createAliveMonsters } from "../models/monster-model.js";
 import { createTower, clearRemoveTower } from "../models/tower-model.js";
 import { createGold, setGold } from "../models/gold-model.js";
+import { createScore } from "../models/score-model.js";
 
 export const handleDisconnect = (socket) => {
   removeUser(socket.id);
@@ -23,6 +24,8 @@ export const handleConnection = async (socket, userId) => {
   //데이터 데이블 전체 조회
   const assets = getGameAssets();
   //해당 유저의 웨이브 생성
+  createGold(userId);
+  createScore(userId);
   createWave(userId);
   createTower(userId);
   clearRemoveTower(userId);
