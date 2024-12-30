@@ -17,11 +17,7 @@ import {
   getRemoveTower,
 } from "../models/tower-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
-import {
-  getAliveMonsters,
-  setDeathMonsters,
-  getDeathMonsters,
-} from "../models/monster-model.js";
+import { getAliveMonsters } from "../models/monster-model.js";
 
 const TOWER_TYPE_BUFF = "buffer";
 const BUFF_VALUE = 50;
