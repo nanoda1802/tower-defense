@@ -51,8 +51,8 @@
       "id": 201,
       "health": 100,
       "type": "boss",
-      "attack": 9999,
-      "speed": 10,
+      "attack": 10,
+      "speed": 2,
       "gold": 50,
       "score": 100
     },
@@ -60,8 +60,8 @@
       "id": 202,
       "health": 200,
       "type": "boss",
-      "attack": 9999,
-      "speed": 10,
+      "attack": 20,
+      "speed": 2,
       "gold": 100,
       "score": 200
     },
@@ -69,8 +69,8 @@
       "id": 203,
       "health": 300,
       "type": "boss",
-      "attack": 9999,
-      "speed": 10,
+      "attack": 30,
+      "speed": 2,
       "gold": 150,
       "score": 300
     },
@@ -78,8 +78,8 @@
       "id": 204,
       "health": 400,
       "type": "boss",
-      "attack": 9999,
-      "speed": 10,
+      "attack": 40,
+      "speed": 2,
       "gold": 200,
       "score": 400
     },
@@ -87,8 +87,8 @@
       "id": 205,
       "health": 500,
       "type": "boss",
-      "attack": 9999,
-      "speed": 10,
+      "attack": 50,
+      "speed": 2,
       "gold": 250,
       "score": 500
     }

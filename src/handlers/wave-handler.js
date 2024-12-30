@@ -1,155 +1,44 @@
-import { waveModel, WaveState } from "../models/wave-model.js";
-import { createAliveMonsters, getMonsterInstance, getBossInstance } from "../models/monster-model.js";
+import { getGameAssets } from "../inits/assets.js";
+import { getWave, setWave } from "../models/wave-model.js";
 
-export const waveChangeHandler = {
-  /**
-   * 웨이브 시작 요청 처리
-   * - 새로운 유저인 경우 초기 웨이브 데이터 생성
-   * - 이미 진행 중인 웨이브가 있는지 확인
-   * - 웨이브 시작 시 몬스터 인스턴스 생성 및 상태 반환
-   */
-  waveStart: (userId, payload) => {
-    try {
-      const { timestamp } = payload;
-      const status = waveModel.getWaveStatus(userId);
-
-      // 새로운 사용자인 경우 초기화
-      if (!status) {
-        waveModel.createWave(userId);
-        createAliveMonsters(userId);
-      }
-      // 이미 ACTIVE나 BOSS 상태면 진행 불가
-      else if (status.state === WaveState.ACTIVE || status.state === WaveState.BOSS) {
-        return {
-          status: "fail",
-          message: "이미 진행 중인 웨이브가 있습니다.",
-        };
-      }
-
-      // 웨이브 시작 처리 (WAITING -> ACTIVE)
-      if (waveModel.startWave(userId)) {
-        const newStatus = waveModel.getWaveStatus(userId);
-        const monsterInstance = getMonsterInstance(userId);
-
-        return {
-          status: "success",
-          waveNumber: newStatus.waveNumber,
-          monsterData: monsterInstance,
-          remainingMonsters: newStatus.remainingMonsters,
-          timestamp,
-        };
-      }
-    } catch (error) {
-      return {
-        status: "fail",
-        message: error.message,
-      };
-    }
-  },
-
-  /**
-   * 일반 몬스터 처치 요청 처리
-   * - 몬스터 처치 시 남은 몬스터 수 감소
-   * - 모든 몬스터 처치 완료 시 보스 몬스터 등장
-   * - 현재 상태 및 다음 몬스터 정보 반환
-   */
-  monsterKill: (userId, payload) => {
-    try {
-      const { timestamp } = payload;
-
-      if (waveModel.handleMonsterKill(userId)) {
-        const status = waveModel.getWaveStatus(userId);
-
-        // 모든 몬스터 처치 완료시 보스 등장
-        if (status.state === WaveState.BOSS) {
-          const bossInstance = getBossInstance(userId);
-          return {
-            status: "success",
-            type: "BOSS_SPAWN",
-            bossData: bossInstance,
-            timestamp,
-          };
-        }
-
-        return {
-          status: "success",
-          type: "STATUS_UPDATE",
-          status: {
-            ...status,
-            currentMonster: getMonsterInstance(userId),
-          },
-          timestamp,
-        };
-      }
-    } catch (error) {
-      return {
-        status: "fail",
-        message: error.message,
-      };
-    }
-  },
-
-  /**
-   * 보스 몬스터 처치 요청 처리
-   * - 보스 처치 성공 시 웨이브 완료 처리
-   * - 다음 웨이브 존재 시 다음 웨이브로 진행
-   * - 모든 웨이브 완료 시 게임 종료
-   */
-  bossKill: (userId, payload) => {
-    try {
-      const { timestamp } = payload;
-
-      if (waveModel.handleBossKill(userId)) {
-        const status = waveModel.getWaveStatus(userId);
-
-        // 다음 웨이브로 진행 가능한 경우
-        if (waveModel.progressToNextWave(userId)) {
-          return {
-            status: "success",
-            type: "NEXT_WAVE",
-            waveNumber: status.waveNumber + 1,
-            timestamp,
-          };
-        } else {
-          // 모든 웨이브 클리어
-          return {
-            status: "success",
-            type: "ALL_COMPLETE",
-            timestamp,
-          };
-        }
-      }
-    } catch (error) {
-      return {
-        status: "fail",
-        message: error.message,
-      };
-    }
-  },
-
-  /**
-   * 현재 웨이브 상태 조회 요청 처리
-   * - 웨이브 번호, 진행 상태, 남은 몬스터 수 등 반환
-   * - 웨이브 데이터가 없는 경우 에러 메시지 반환
-   */
-  getWaveStatus: (userId) => {
-    try {
-      const status = waveModel.getWaveStatus(userId);
-      if (!status) {
-        return {
-          status: "fail",
-          message: "웨이브가 존재하지 않습니다.",
-        };
-      }
-      return {
-        status: "success",
-        ...status,
-      };
-    } catch (error) {
-      return {
-        status: "fail",
-        message: error.message,
-      };
-    }
-  },
+/* 사용자의 웨이브 이동 처리 */
+export const waveChangeHandler = (userId, payload) => {
+  const {
+    monsterIndex,
+    currentWave,
+    targetWave,
+    timestamp: changeTime,
+  } = payload;
+  // [1] 사용자의 현재 기준 웨이브 정보 조회
+  let myWaves = getWave(userId);
+  // [1-1] 웨이브 정보가 빈 배열이면, 즉 게임 진행 사항이 없는 사용자면 실패 응답
+  if (!myWaves.length) {
+    return { status: "fail", message: "진행 정보가 없는 사용자임다!!" };
+  }
+  // [2] 사용자가 지난 웨이브 목록 오름차순으로 정렬
+  myWaves.sort((a, b) => a.waveId - b.waveId);
+  // [3] 지난 웨이브 중 최근, 즉 배열의 마지막 웨이브 ID 값 가져옴
+  const lastWaveId = myWaves[myWaves.length - 1].waveId;
+  // [4] 서버에 저장된 최근 웨이브 ID와, 클라이언트가 보낸 현재 웨이브 ID가 동일한지 비교
+  if (lastWaveId !== currentWave) {
+    // 다르다면 유효하지 않은 요청이므로 실패 응답
+    return { status: "fail", message: "당신과 서버의 웨이브 정보가 다름다!!" };
+  }
+  // [5] 재료 데이터에서 웨이브 정보 가져옴
+  const { waves } = getGameAssets();
+  // [6] 목표 처치 수와 클라가 처치한 몬스터 수 비교해 더 적으면 실패 응답
+  const killCount = waves.data.find(
+    (wave) => wave.id === currentWave,
+  ).monster_cnt;
+  if (killCount > monsterIndex + 1) {
+    return { status: "fail", message: "남은 몬스터가 있슴다!!" };
+  }
+  // [9] 클라이언트가 목표한 다음 웨이브 정보의 ID가 서버 재료 데이터에 없으면 실패 응답
+  if (!waves.data.some((wave) => wave.id === targetWave)) {
+    return { status: "fail", message: "넘어갈 웨이브가 없슴다!!" };
+  }
+  // [10] 모든 검증 통과 시 사용자의 웨이브를 다음으로 이동시키고, 이동 시간 기록
+  setWave(userId, targetWave, changeTime);
+  // [11] 웨이브 이동 성공 응답 반환
+  return { status: "success", message: "웨이브 이동 성공임다!!" };
 };
