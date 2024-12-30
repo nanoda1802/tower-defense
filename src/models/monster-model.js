@@ -83,6 +83,16 @@ export const setDeathMonsters = (
   });
 };
 
+//살아있는 몬스터 배열 초기화
+export const clearAliveMonsters = (userId) => {
+  aliveMonsters[userId] = [];
+};
+
+//죽은 몬스터 배열 초기화
+export const clearDeathMonsters = (userId) => {
+  deathMonsters[userId] = [];
+};
+
 //여기부터 보스
 //살아있는 보스 배열 만들기
 // export const createAliveBosses = (userId) => {
