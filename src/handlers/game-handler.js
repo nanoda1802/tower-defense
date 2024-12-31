@@ -1,9 +1,22 @@
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave, setWave } from "../models/wave-model.js";
-import { clearTower, clearRemoveTower } from "../models/tower-model.js";
+import {
+  setTower,
+  clearTower,
+  clearRemoveTower,
+  getTower,
+} from "../models/tower-model.js";
 import { clearScore, getScore, setScore } from "../models/score-model.js";
-import { clearHeadquarter, setHeadquarter, getHeadquarter } from "../models/headquarter.model.js";
-import { clearAliveMonsters, clearDeathMonsters } from "../models/monster-model.js";
+import {
+  clearHeadquarter,
+  setHeadquarter,
+  getHeadquarter,
+} from "../models/headquarter.model.js";
+import {
+  clearAliveMonsters,
+  clearDeathMonsters,
+} from "../models/monster-model.js";
+import { TOWER_TYPE_PAWN } from "../constants.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -17,6 +30,22 @@ export const gameStart = (userId, payload) => {
   // [3] 타워 초기화
   clearTower(userId);
   clearRemoveTower(userId);
+  const randomNum = Math.round(Math.random());
+  const positionX = (Math.floor(Math.random() * 7) + 3) * 100;
+  const positionY = randomNum === 0 ? 300 : 500;
+  const towerType = TOWER_TYPE_PAWN;
+  const towerData = getGameAssets().pawnTowers.data[randomNum];
+  setTower(
+    userId,
+    positionX,
+    positionY,
+    towerType,
+    payload.timestamp,
+    Object.assign({}, towerData),
+    false,
+    null,
+    [],
+  );
   // [4] 스코어 초기화
   clearScore(userId);
   setScore(userId, 0, 0, payload.timestamp);
@@ -33,6 +62,10 @@ export const gameStart = (userId, payload) => {
     message: "Game Started!!",
     gold: initGold,
     initHp,
+    positionX,
+    positionY,
+    type: towerType,
+    data: towerData,
   };
 };
 
