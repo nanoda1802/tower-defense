@@ -288,7 +288,7 @@ export async function gameLoop() {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status: "gameOver"
+      status: 'gameOver',
     }).then((res) => {
       alert(`Game Over!! ${res.message}`);
       location.reload(); // 새로고침
@@ -300,7 +300,7 @@ export async function gameLoop() {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status : "clear"
+      status: 'clear',
     }).then((res) => {
       alert(`Game Clear!! ${res.message}`);
       location.reload(); // 새로고침

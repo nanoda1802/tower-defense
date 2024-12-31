@@ -7,7 +7,12 @@ const initSocket = (server) => {
   // [1] 서버에 SocketIO 연결
   const io = new SocketIO(server, {
     cors: {
-      origin: 'http://127.0.0.1:8080', // 허용할 클라이언트 URL
+      origin: [
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://wakelight.shop:3000',
+        'http://localhost:3000',
+      ], // 허용할 클라이언트 URL
       methods: ['GET', 'POST', 'DELETE'], // 허용할 HTTP 메서드
       credentials: true, // 인증 정보 포함 여부
     },
