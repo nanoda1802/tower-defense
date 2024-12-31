@@ -4,6 +4,7 @@
   "data": [
     {
       "id": 1001,
+      "card": "1",
       "color": "red",
       "type": "pawn",
       "attack": 10,
@@ -13,6 +14,7 @@
     },
     {
       "id": 1002,
+      "card": "1",
       "color": "black",
       "type": "pawn",
       "attack": 10,
