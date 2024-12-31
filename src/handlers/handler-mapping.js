@@ -1,9 +1,6 @@
-import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
-import { collideHandler } from "./headquarter-handler.js";
-import {
-  createMonsterHandler,
-  deathMonsterHandler,
-} from "./monster-handler.js";
+import { gameStart, gameEnd, gameSave, gameLoad } from './game-handler.js';
+import { collideHandler } from './headquarter-handler.js';
+import { createMonsterHandler, deathMonsterHandler } from './monster-handler.js';
 import {
   getTowerHandler,
   sellTowerHandler,
@@ -11,8 +8,9 @@ import {
   attackTowerHandler,
   buffTowerHandler,
   slowTowerHandler,
-} from "./tower-handler.js";
-import { waveChangeHandler } from "./wave-handler.js";
+} from './tower-handler.js';
+import { waveChangeHandler } from './wave-handler.js';
+import { handleRoomJoin, handleGameStateUpdate } from './room-handler.js';
 
 const eventHandlerMappings = {
   11: gameStart, // 해써
@@ -27,6 +25,8 @@ const eventHandlerMappings = {
   45: buffTowerHandler,
   46: slowTowerHandler,
   51: waveChangeHandler,
+  101: handleRoomJoin,
+  102: handleGameStateUpdate,
 };
 
 const monsterHandlerMappings = {

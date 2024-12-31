@@ -18,6 +18,7 @@ import {
 } from "../models/tower-model.js";
 import { getGold, setGold } from "../models/gold-model.js";
 import { getAliveMonsters } from "../models/monster-model.js";
+import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 
 const TOWER_TYPE_BUFF = "buffer";
 const BUFF_VALUE = 50;
@@ -79,28 +80,33 @@ export const getTowerHandler = (userId, payload) => {
       /*특수 타워*/
 
       const probability = Math.floor(Math.random() * 1001) / 10;
-      if (probability >= 0 && probability <= 16.5) {
+      // if (probability >= 0 && probability <= 16.5) {
+      //   towerInfo = specialTowers.data[0]; //J-red
+      // } else if (probability > 16.5 && probability <= 33) {
+      //   towerInfo = specialTowers.data[1]; //J-black
+      // } else if (probability > 33 && probability <= 49.5) {
+      //   towerInfo = specialTowers.data[2]; //Q-red
+      // } else if (probability > 49.5 && probability <= 66) {
+      //   towerInfo = specialTowers.data[3]; //Q-black
+      // } else if (probability > 66 && probability <= 82.5) {
+      //   towerInfo = specialTowers.data[4]; //K-red
+      // } else if (probability > 82.5 && probability <= 99) {
+      //   towerInfo = specialTowers.data[5]; //K-black
+      // } else if (probability > 99 && probability < 100) {
+      //   towerInfo = specialTowers.data[6]; //Joker
+      // }
+
+      if (probability >= 0 && probability <= 24.75) {
         towerInfo = specialTowers.data[0]; //J-red
-      } else if (probability > 16.5 && probability <= 33) {
+      } else if (probability > 24.75 && probability <= 49.5) {
         towerInfo = specialTowers.data[1]; //J-black
-      } else if (probability > 33 && probability <= 49.5) {
-        towerInfo = specialTowers.data[2]; //Q-red
-      } else if (probability > 49.5 && probability <= 66) {
-        towerInfo = specialTowers.data[3]; //Q-black
-      } else if (probability > 66 && probability <= 82.5) {
+      } else if (probability > 49.5 && probability <= 74.25) {
         towerInfo = specialTowers.data[4]; //K-red
-      } else if (probability > 82.5 && probability <= 99) {
+      } else if (probability > 74.25 && probability <= 99) {
         towerInfo = specialTowers.data[5]; //K-black
       } else if (probability > 99 && probability < 100) {
         towerInfo = specialTowers.data[6]; //Joker
       }
-      // if (probability >= 0 && probability < 49.5) {
-      //   towerInfo = specialTowers.data[4]; //K-red
-      // } else if (probability >= 49.5 && probability < 99) {
-      //   towerInfo = specialTowers.data[5]; //K-black
-      // } else if (probability > 99 && probability <= 100) {
-      //   towerInfo = specialTowers.data[6]; //Joker
-      // }
     }
 
     setTower(
@@ -157,20 +163,29 @@ export const sellTowerHandler = (userId, payload) => {
      *  CASE2. 버프 타워인 경우
      *  - towerInfo 객체의 buffTowerArr 목록의 타워들을 버프 전 상태로 원복 시켜야함.
      */
-    // if (TOWER_TYPE_BUFF !== towerInfo.data.type) {
-    //   if (towerInfo.isGetBuff) {
-    //     const buffTowerPos = towerInfo.buffTowerPos.split(',');
-    //     const buffTower = userTowers.find((tower) => tower.positionX === buffTowerPos[0] && tower.positionY === buffTowerPos[1]);
-    //     const index = buffTower.buffTowerArr.findIndex((tower) => tower.data.id === towerId && tower.positionX === positionX && tower.positionY === positionY);
-    //     if (index !== -1) {
-    //       return buffTower.buffTowerArr.splice(index, 1)[0];
-    //     }
-    //   }
-    // } else {
-    //   towerInfo.buffTowerArr.forEach((tower) => {
-    //     changeBuffStatus(tower, false, null);
-    //   });
-    // }
+    if (TOWER_TYPE_BUFF !== towerInfo.data.type) {
+      if (towerInfo.isGetBuff) {
+        const buffTowerPos = towerInfo.buffTowerPos.split(",");
+        const buffTower = userTowers.find(
+          (tower) =>
+            tower.positionX === buffTowerPos[0] &&
+            tower.positionY === buffTowerPos[1],
+        );
+        const index = buffTower.buffTowerArr.findIndex(
+          (tower) =>
+            tower.data.id === towerId &&
+            tower.positionX === positionX &&
+            tower.positionY === positionY,
+        );
+        if (index !== -1) {
+          return buffTower.buffTowerArr.splice(index, 1)[0];
+        }
+      }
+    } else {
+      towerInfo.buffTowerArr.forEach((tower) => {
+        changeBuffStatus(tower, false, null);
+      });
+    }
 
     /** 3. 판매처리 (골드)
      *  일반 : 뽑기 금액 / 2 * 카드숫자
@@ -299,6 +314,7 @@ export const attackTowerHandler = (userId, payload) => {
       monsterPositionX,
       monsterPositionY,
       timestamp,
+      monsterIndex,
     } = payload;
 
     // 0. 타워 및 몬스터 Type 유효성 검사
@@ -342,22 +358,37 @@ export const attackTowerHandler = (userId, payload) => {
       };
     }
 
-    // 3. 생존한 몬스터가 맞는지 검증 (위치 포함)
+    // 3. 해당 몬스터가 존재하는 몬스터가 맞는지 체크
     const aliveTargets = getAliveMonsters(userId);
+    if (aliveTargets.length === 0) {
+      return {
+        status: "fail",
+        message: "There is no generated monster information",
+      };
+    }
+    // const targetInfo = aliveTargets.find((target) => target.monsterId === monsterId && target.positionX === monsterPositionX && target.positionY === monsterPositionY)
     const targetInfo = aliveTargets.find(
       (target) =>
-        target.monsterId === monsterId &&
-        target.positionX === monsterPositionX &&
-        target.positionY === monsterPositionY,
+        target.monsterId === monsterId && target.monsterIndex === monsterIndex,
     );
     if (!targetInfo) {
       return {
         status: "fail",
-        message: `There is not a ${monsterType === MONSTER_TYPE ? "moster" : "boss"}`,
+        message: `The ${monsterType === MONSTER_TYPE ? "moster" : "boss"} cannot be found `,
       };
     }
 
-    //  4. 공격 사거리 검증
+    // 좌표 검증 한다면
+    // const calculateX = calculateMonsterMove(monsterId, monsterIndex, targetInfo.timestamp);
+    // const tolerance = 10;
+    // if (calculateX < monsterPositionX || calculateX > monsterIndex + tolerance) {
+    //   return {
+    //     status: 'fail',
+    //     message: `There is not a ${monsterType === MONSTER_TYPE ? 'moster' : 'boss'}`,
+    //   };
+    // }
+
+    //  4. 공격 사거리 체크
     const distance = Math.sqrt(
       Math.pow(towerInfo.positionX - targetInfo.positionX, 2) +
         Math.pow(towerInfo.positionY - targetInfo.positionY, 2),
