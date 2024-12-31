@@ -144,6 +144,30 @@ function placeNewTower(type, color) {
     alert("설치할 위치 먼저 선택하세요!!");
   }
 }
+function placeInitialTowers(res) {
+  const { positionX: x, positionY: y, type, data } = res;
+  const towerNum = data.id;
+  // [1] 응답 받은 타워 정보 적용해 설치
+  let towerImage;
+  if (towerNum === 1002) {
+    towerImage = blackPawnImages[0];
+  } else if (towerNum === 1001) {
+    towerImage = redPawnImages[0];
+  }
+  const tower = new Tower(
+    x,
+    y,
+    towerImage,
+    towerNum,
+    type,
+    data.attack,
+    data.attack_speed,
+    data.range,
+  );
+  towers.push(tower);
+  tower.draw(ctx);
+}
+
 /* 몬스터 생성 */
 let monsterIndex = 0;
 function spawnMonster(currentWave) {
@@ -365,11 +389,9 @@ async function initGame() {
   }
   // [2] 서버에 게임 시작 알림
   await sendEvent(11, { timestamp: Date.now() }).then((res) => {
-    if (res.status === "success") {
-      userGold = res.gold;
-      initHp = res.initHp;
-    }
     // [3] 필요한 요소들 준비 및 초기화
+    userGold = res.gold;
+    initHp = res.initHp;
     monsters = [];
     towers = [];
     score = 0;
@@ -379,6 +401,7 @@ async function initGame() {
     drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
     wave = new Wave(); // 웨이브 생성
     wave.setWave();
+    placeInitialTowers(res); // 초기 타워 설치
     // [4] 게임 실행 상태로 바꾸고 루프 ON
     isInitGame = true;
     gameLoop();
@@ -639,7 +662,7 @@ function upgradeTower(tower) {
         tower.attackPower = data.attack;
         tower.attackSpeed = data.attack_speed;
         tower.range = data.range;
-        // [4] 타워 이미지 변경 (매끄럽게 될 때 있고 안 될 때가 있다...)
+        // [4] 타워 이미지 변경 
         if (type === "pawn" && data.color === "black") {
           tower.image = blackPawnImages[+currentImageNum + 1];
         } else if (type === "pawn" && data.color === "red") {
