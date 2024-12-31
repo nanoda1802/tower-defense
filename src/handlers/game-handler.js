@@ -51,12 +51,13 @@ export const gameEnd = (userId, payload) => {
     !payload ||
     typeof payload.timestamp !== "number" ||
     typeof payload.score !== "number" ||
-    typeof payload.leftGold !== "number"
+    typeof payload.leftGold !== "number" ||
+    !['clear', 'gameOver'].includes(payload.status) // 상태가 'clear' 또는 'gameOver'인지 확인
   ) {
     throw new Error("잘못된 payload 형식");
   }
 
-  const { timestamp: gameEndTime, score, leftGold } = payload;
+  const { timestamp: gameEndTime, score, leftGold, status } = payload;
 
   // 서버에서 최신 점수와 골드 데이터를 가져오기
   const scores = getScore(userId); // 서버에서 점수 데이터
@@ -79,8 +80,13 @@ export const gameEnd = (userId, payload) => {
     );
   }
 
-  // 최종 점수 계산
-  const finalScore = serverScore + serverGold;
+  let finalScore = serverScore
+
+  if (status === 'clear') {
+    finalScore += serverGold; // 게임 클리어 시 서버 골드와 클라이언트의 남은 골드를 더함
+  } else if (status === 'gameOver') {
+    finalScore // 게임 오버 시 골드를 더하지 않음
+  }
 
   // 최종 결과 반환
   return {
@@ -92,9 +98,11 @@ export const gameEnd = (userId, payload) => {
       finalScore,
       leftGold,
       gameEndTime,
+      status, // 게임 상태도 결과에 포함
     },
   };
 };
+
 
 /* Game Save 13 */
 export const gameSave = (userId, payload) => {

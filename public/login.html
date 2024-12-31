@@ -75,6 +75,22 @@
 
             // index.html로 이동
             window.location.href = 'index.html';
+          } else if (result.sessionExists) {
+            // 이미 로그인된 세션 처리
+            const confirmLogout = confirm(result.message); // "이미 로그인된 계정입니다."
+            if (confirmLogout) {
+              // 기존 세션 삭제 요청
+              await fetch('http://localhost:3000/api/account/logout', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+              });
+
+              alert('기존 세션이 종료되었습니다. 다시 로그인하세요.');
+              document.getElementById('login').click(); // 재로그인 요청
+            }
           } else {
             // 실패 메시지 표시
             alert(result.message || '로그인에 실패했습니다.');
