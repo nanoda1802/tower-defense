@@ -1,17 +1,9 @@
-import { getGameAssets } from "../inits/assets.js";
 import { setGold, clearGold, getGold } from "../models/gold-model.js";
 import { clearWave, setWave } from "../models/wave-model.js";
 import { clearTower, clearRemoveTower } from "../models/tower-model.js";
 import { clearScore, getScore, setScore } from "../models/score-model.js";
-import {
-  clearHeadquarter,
-  setHeadquarter,
-  getHeadquarter,
-} from "../models/headquarter.model.js";
-import {
-  clearAliveMonsters,
-  clearDeathMonsters,
-} from "../models/monster-model.js";
+import { clearHeadquarter, setHeadquarter, getHeadquarter } from "../models/headquarter.model.js";
+import { clearAliveMonsters, clearDeathMonsters } from "../models/monster-model.js";
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -52,7 +44,7 @@ export const gameEnd = (userId, payload) => {
     typeof payload.timestamp !== "number" ||
     typeof payload.score !== "number" ||
     typeof payload.leftGold !== "number" ||
-    !['clear', 'gameOver'].includes(payload.status) // 상태가 'clear' 또는 'gameOver'인지 확인
+    !["clear", "gameOver"].includes(payload.status) // 상태가 'clear' 또는 'gameOver'인지 확인
   ) {
     throw new Error("잘못된 payload 형식");
   }
@@ -68,24 +60,20 @@ export const gameEnd = (userId, payload) => {
 
   // 클라이언트와 서버 점수 비교
   if (serverScore !== score) {
-    throw new Error(
-      `점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`,
-    );
+    throw new Error(`점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`);
   }
 
   // 클라이언트와 서버 골드 비교
   if (serverGold !== leftGold) {
-    throw new Error(
-      `골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`,
-    );
+    throw new Error(`골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`);
   }
 
-  let finalScore = serverScore
+  let finalScore = serverScore;
 
-  if (status === 'clear') {
+  if (status === "clear") {
     finalScore += serverGold; // 게임 클리어 시 서버 골드와 클라이언트의 남은 골드를 더함
-  } else if (status === 'gameOver') {
-    finalScore // 게임 오버 시 골드를 더하지 않음
+  } else if (status === "gameOver") {
+    finalScore; // 게임 오버 시 골드를 더하지 않음
   }
 
   // 최종 결과 반환
@@ -101,15 +89,4 @@ export const gameEnd = (userId, payload) => {
       status, // 게임 상태도 결과에 포함
     },
   };
-};
-
-
-/* Game Save 13 */
-export const gameSave = (userId, payload) => {
-  //게임저장
-  //현재 게임 상태를 저장하는 함수
-};
-/* Game Load 14 */
-export const gameLoad = (userId, payload) => {
-  //게임 불러오기
 };
