@@ -60,21 +60,21 @@ export const getTowerHandler = (userId, payload) => {
       /*특수 타워*/
 
       const probability = Math.floor(Math.random() * 1001) / 10;
-      // if (probability >= 0 && probability <= 16.5) {
-      //   towerInfo = specialTowers.data[0]; //J-red
-      // } else if (probability > 16.5 && probability <= 33) {
-      //   towerInfo = specialTowers.data[1]; //Q-red
-      // } else if (probability > 33 && probability <= 49.5) {
-      //   towerInfo = specialTowers.data[2]; //K-red
-      // } else if (probability > 49.5 && probability <= 66) {
-      //   towerInfo = specialTowers.data[3]; //J-black
-      // } else if (probability > 66 && probability <= 82.5) {
-      //   towerInfo = specialTowers.data[4]; //Q-black
-      // } else if (probability > 82.5 && probability <= 99) {
-      //   towerInfo = specialTowers.data[5]; //K-black
-      // } else if (probability > 99 && probability < 100) {
-      //   towerInfo = specialTowers.data[6]; //Joker
-      // }
+      if (probability >= 0 && probability <= 16.5) {
+        towerInfo = specialTowers.data[0]; //J-red
+      } else if (probability > 16.5 && probability <= 33) {
+        towerInfo = specialTowers.data[1]; //Q-red
+      } else if (probability > 33 && probability <= 49.5) {
+        towerInfo = specialTowers.data[2]; //K-red
+      } else if (probability > 49.5 && probability <= 66) {
+        towerInfo = specialTowers.data[3]; //J-black
+      } else if (probability > 66 && probability <= 82.5) {
+        towerInfo = specialTowers.data[4]; //Q-black
+      } else if (probability > 82.5 && probability <= 99) {
+        towerInfo = specialTowers.data[5]; //K-black
+      } else if (probability > 99 && probability < 100) {
+        towerInfo = specialTowers.data[6]; //Joker
+      }
 
       towerInfo = specialTowers.data[0]; //J-red
     }
