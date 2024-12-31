@@ -193,12 +193,12 @@ export const upgradeTowerHandler = (userId, payload) => {
     if (!userGold) {
       return { status: 'fail', message: 'No gold data for user' };
     }
-
+    console.log("NaN 후보 01 : ", userGold[userGold.length - 1].gold);
     // 나중에 특수 카드도 강화 하게 되면 아래 사용
     // const x = 2;
     // const cost = towerInfo.data.card === 'J' ? 11 * x : towerInfo.data.card === 'Q' ? 12 * x  : towerInfo.data.card === 'K' ? 13 * x : Number(towerInfo.data.card) * x;
     const cost = Number(towerInfo.data.card) * 2;
-
+    console.log("NaN 후보 02 : ", towerInfo.data.card);
     // 보유 골드 체크
     if (userGold[userGold.length - 1].gold < cost) {
       return { status: 'fail', message: 'Not enough money' };
@@ -209,7 +209,6 @@ export const upgradeTowerHandler = (userId, payload) => {
 
     // 4. 타워 업글 처리
     upgradeTower(userId, towerId, positionX, positionY);
-
     return {
       status: 'success',
       gold: userGold[userGold.length - 1].gold,
