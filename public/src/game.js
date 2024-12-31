@@ -167,6 +167,7 @@ function spawnMonster(currentWave) {
             monsterPath,
             monsterImages[currentWave + 4],
             res.monsterId,
+            res.monsterType,
             res.monsterHealth,
             res.monsterAttack,
             res.monsterSpeed,
@@ -184,6 +185,7 @@ function spawnMonster(currentWave) {
             monsterPath,
             monsterImages[currentWave - 1],
             res.monsterId,
+            res.monsterType,
             res.monsterHealth,
             res.monsterAttack,
             res.monsterSpeed,
@@ -209,7 +211,7 @@ async function gameLoop() {
     monsterSpawnInterval = 200;
   }
   // [3] 타워 그리기와 몬스터 공격 판정 체크
-  towers.forEach((tower) => {
+  towers.forEach((tower, towerIndex, towers) => {
     tower.draw(ctx);
     tower.updateAttackInterval();
     // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
@@ -218,7 +220,36 @@ async function gameLoop() {
         Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
       );
       if (distance < tower.range) {
-        tower.attack(monster);
+        if (tower.type === "buffer") {
+          sendEvent(45, {
+            towerId: tower.id,
+            positionX: tower.x,
+            positionY: tower.y,
+          }).then((res) => {
+            // 일단 이 조건문 안에 있으면 안 될 거 같음 다른 타워들이랑 거리를 비교해야하는디
+            // 일단 동작 체크 해보자
+            tower.buff(towers[towerIndex + 1], res.buffValue);
+          });
+        } else if (tower.type !== "buffer") {
+          sendEvent(44, {
+            towerType: tower.type,
+            towerId: tower.id,
+            towerPositionX: tower.x,
+            towerPositionY: tower.y,
+            monsterType: monster.type,
+            monsterId: monster.id,
+            monsterPositionX: monster.x,
+            monsterPositionY: monster.y,
+            timestamp: Date.now(),
+          }).then((res) => {
+            if (res.status === "success") {
+              tower.attack(monster);
+            } else if (res.status === "fail") {
+              alert(`공격 처리 실패!! ${res.message}`);
+            }
+          });
+        }
+        // 일단 대기
       }
     });
   });
@@ -288,7 +319,7 @@ async function gameLoop() {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status: "gameOver"
+      status: "gameOver",
     }).then((res) => {
       alert(`Game Over!! ${res.message}`);
       location.reload(); // 새로고침
@@ -300,7 +331,7 @@ async function gameLoop() {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status : "clear"
+      status: "clear",
     }).then((res) => {
       alert(`Game Clear!! ${res.message}`);
       location.reload(); // 새로고침

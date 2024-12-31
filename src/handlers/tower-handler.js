@@ -480,7 +480,11 @@ export const buffTowerHandler = (userId, payload) => {
     }
 
     // 버프 받은 타워 목록 return
-    return { status: "success", towers: towerInfo.buffTowerArr };
+    return {
+      status: "success",
+      towers: towerInfo.buffTowerArr,
+      buffValue: BUFF_VALUE,
+    };
   } catch (error) {
     throw new Error("Failed to buffTowerHandler !! " + error.message);
   }

@@ -9,7 +9,7 @@
       "type": "buffer",
       "attack": 0,
       "attack_speed": 10,
-      "range": 300,
+      "range": 1000,
       "splash": 5
     },
     {
@@ -39,7 +39,7 @@
       "type": "buffer",
       "attack": 0,
       "attack_speed": 10,
-      "range": 300,
+      "range": 1000,
       "splash": 0
     },
     {
