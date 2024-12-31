@@ -16,10 +16,10 @@
       "id": 2002,
       "card": "Q",
       "color": "red",
-      "type": "freezer",
-      "attack": 10,
+      "type": "attacker",
+      "attack": 20,
       "attack_speed": 10,
-      "range": 300,
+      "range": 150,
       "splash": 5
     },
     {
@@ -46,10 +46,10 @@
       "id": 2005,
       "card": "Q",
       "color": "black",
-      "type": "freezer",
-      "attack": 10,
+      "type": "attacker",
+      "attack": 20,
       "attack_speed": 10,
-      "range": 300,
+      "range": 150,
       "splash": 0
     },
     {

@@ -1,7 +1,6 @@
 export class Tower {
   isBuff = false;
   isBuffed = false;
-  isAttack = false;
   constructor(x, y, towerImage, id, type, attack, attackSpeed, range) {
     this.id = id;
     this.type = type;
@@ -37,7 +36,6 @@ export class Tower {
 
   attack(monster) {
     if (this.attackInterval <= 0) {
-      this.isAttack = true;
       monster.currentHp -= this.attackPower;
       this.attackInterval = 180; // 3초 쿨타임 (초당 60프레임)
       this.beamDuration = 30; // 광선 지속 시간 (0.5초)
