@@ -1,23 +1,12 @@
-import { monsterTable } from "./game.js";
+import { monsterTable } from './game.js';
 
 /* monsterHealth, monsterAttack, monsterSpeed, monsterGold, monsterScore, */
 
 export class Monster {
   isEventProcessing = false;
-  constructor(
-    path,
-    monsterImage,
-    id,
-    maxHp,
-    attack,
-    speed,
-    gold,
-    score,
-    wave,
-    index,
-  ) {
+  constructor(path, monsterImage, id, maxHp, attack, speed, gold, score, wave, index) {
     if (!path || path.length <= 0) {
-      throw new Error("몬스터가 이동할 경로가 필요합니다.");
+      throw new Error('몬스터가 이동할 경로가 필요합니다.');
     }
     this.id = id;
     this.path = path; // 몬스터가 이동할 경로
@@ -37,8 +26,8 @@ export class Monster {
     this.index = index;
   }
 
-  move() {
-    this.x += this.speed;
+  move(deltatime) {
+    this.x += this.speed * deltatime;
   }
 
   collideWith(base) {
@@ -48,12 +37,8 @@ export class Monster {
 
   draw(ctx) {
     ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-    ctx.font = "12px Arial";
-    ctx.fillStyle = "Black";
-    ctx.fillText(
-      `(Wave ${this.wave}) ${this.currentHp}/${this.maxHp}`,
-      this.x,
-      this.y - 5,
-    );
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'Black';
+    ctx.fillText(`(Wave ${this.wave}) ${this.currentHp}/${this.maxHp}`, this.x, this.y - 5);
   }
 }
