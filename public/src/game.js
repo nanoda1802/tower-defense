@@ -2,7 +2,15 @@ import { Base } from './base.js';
 import { Monster } from './monster.js';
 import { Tower } from './tower.js';
 import { Wave } from './wave.js';
-import { backgroundImage, blackPawnImages, redPawnImages, specialImages, baseImage, pathImage, monsterImages } from '../elements/images.js';
+import {
+  backgroundImage,
+  blackPawnImages,
+  redPawnImages,
+  specialImages,
+  baseImage,
+  pathImage,
+  monsterImages,
+} from '../elements/images.js';
 
 /* 
   어딘가에 엑세스 토큰이 저장이 안되어 있다면 로그인을 유도하는 코드를 여기에 추가해주세요!
@@ -112,7 +120,19 @@ function placeNewTower(type, color) {
         } else {
           towerImage = specialImages[towerNum - 2001];
         }
-        const tower = new Tower(x, y, towerImage, towerNum, type, data.attack, data.attack_speed, data.range, null, false, null);
+        const tower = new Tower(
+          x,
+          y,
+          towerImage,
+          towerNum,
+          type,
+          data.attack,
+          data.attack_speed,
+          data.range,
+          null,
+          false,
+          null,
+        );
         towers.push(tower);
         tower.draw(ctx);
         // [5] 타워 비용만큼 골드 차감
@@ -132,8 +152,16 @@ function placeNewTower(type, color) {
               towers.forEach((targetTower) => {
                 //대상 타워 버프 처리
                 if (!targetTower.isGetBuff) {
-                  if (targetTower.x === res.buffTarget.positionX && targetTower.y === res.buffTarget.positionY) {
-                    targetTower.buffStatus(res.buffValue, res.color, true, res.buffTarget.buffTowerPos);
+                  if (
+                    targetTower.x === res.buffTarget.positionX &&
+                    targetTower.y === res.buffTarget.positionY
+                  ) {
+                    targetTower.buffStatus(
+                      res.buffValue,
+                      res.color,
+                      true,
+                      res.buffTarget.buffTowerPos,
+                    );
                     tempTarget = targetTower;
                   }
                 }
@@ -162,7 +190,16 @@ function placeInitialTowers(res) {
   } else if (towerNum === 1001) {
     towerImage = redPawnImages[0];
   }
-  const tower = new Tower(x, y, towerImage, towerNum, type, data.attack, data.attack_speed, data.range);
+  const tower = new Tower(
+    x,
+    y,
+    towerImage,
+    towerNum,
+    type,
+    data.attack,
+    data.attack_speed,
+    data.range,
+  );
   towers.push(tower);
   tower.draw(ctx);
 }
@@ -244,7 +281,9 @@ export async function gameLoop() {
     // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
     monsters.forEach((monster) => {
       if (monster.currentHp > 0) {
-        const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
+        const distance = Math.sqrt(
+          Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
+        );
         if (distance < tower.range) {
           if (tower.beamDuration <= 0 && tower.id !== 2001 && tower.id !== 2004) {
             sendEvent(44, {
@@ -608,14 +647,21 @@ function sellTower(tower) {
         // 버프 타워 삭제인 경우
         if ((tower.id === 2001 || tower.id === 2004) && tower.buffTarget) {
           towers.forEach((targetTower) => {
-            if (targetTower.id === tower.buffTarget.data.id && targetTower.x === tower.buffTarget.positionX && targetTower.y === tower.buffTarget.positionY) {
+            if (
+              targetTower.id === tower.buffTarget.data.id &&
+              targetTower.x === tower.buffTarget.positionX &&
+              targetTower.y === tower.buffTarget.positionY
+            ) {
               targetTower.buffStatus(res.buffValue, tower.id === 2001 ? 'red' : 'black', false);
             }
           });
         } else if (tower.isGetBuff) {
           const buffTowerPosition = tower.buffTowerPos.split(',');
           towers.forEach((targetTower) => {
-            if (targetTower.x === Number(buffTowerPosition[0]) && targetTower.y === Number(buffTowerPosition[1])) {
+            if (
+              targetTower.x === Number(buffTowerPosition[0]) &&
+              targetTower.y === Number(buffTowerPosition[1])
+            ) {
               targetTower.updateBuffTowers(null, null);
             }
           });
