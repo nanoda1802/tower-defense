@@ -138,8 +138,13 @@ export const deathMonsterHandler = (userId, payload) => {
     if (rightGold !== monsterGold) {
       return { status: "fail", message: "Invalid monster gold" };
     }
-
-    setGold(userId, usergold + monsterGold, monsterGold, "KILL", timestamp);
+    setGold(
+      userId,
+      usergold[usergold.length - 1].gold + monsterGold,
+      monsterGold,
+      "KILL",
+      timestamp,
+    );
 
     //점수 증가
     //현재 보유 점수 조회
@@ -153,7 +158,12 @@ export const deathMonsterHandler = (userId, payload) => {
       return { status: "fail", message: "Invalid monster score" };
     }
 
-    setScore(userId, userscore + monsterScore, monsterScore, timestamp);
+    setScore(
+      userId,
+      userscore[userscore.length - 1].sumScore + monsterScore,
+      monsterScore,
+      timestamp,
+    );
 
     return {
       status: "success",

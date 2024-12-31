@@ -3,21 +3,23 @@ import { waveTable, sendEvent } from "./game.js ";
 export class Wave {
   wave = 1;
   waveChange = true;
+  isKillBoss = true;
   targetKillCount = 0;
   isClear = false;
 
   setWave() {
     this.targetKillCount = waveTable[this.wave - 1].monster_cnt;
+    this.isKillBoss = true;
     this.waveChange = false;
   }
 
   update(monsterIndex) {
     if (this.targetKillCount <= 0) {
-      this.waveChange = true;
       if (this.wave === 5) {
-        this.gameClear();
+        this.isClear = true;
         return;
       }
+      this.waveChange = true;
     }
     if (this.waveChange) {
       const currentWaveId = waveTable[this.wave - 1].id;
@@ -31,10 +33,6 @@ export class Wave {
       this.wave += 1;
       this.setWave();
     }
-  }
-
-  gameClear() {
-    this.isClear = true;
   }
 
   reset() {
