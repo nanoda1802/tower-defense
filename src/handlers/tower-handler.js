@@ -75,8 +75,6 @@ export const getTowerHandler = (userId, payload) => {
       } else if (probability > 99 && probability < 100) {
         towerInfo = specialTowers.data[6]; //Joker
       }
-
-      towerInfo = specialTowers.data[0]; //J-red
     }
 
     setTower(userId, positionX, positionY, type, timestamp, Object.assign({}, towerInfo), false, null, null);
