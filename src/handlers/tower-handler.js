@@ -53,7 +53,6 @@ export const getTowerHandler = (userId, payload) => {
     if (userGold[userGold.length - 1].gold < cost) {
       return { status: "fail", message: "Not enough money" };
     }
-
     // 5. 골드 처리
     const resGold = userGold[userGold.length - 1].gold - cost;
     setGold(userId, resGold, -cost, "PURCHASE", timestamp);
