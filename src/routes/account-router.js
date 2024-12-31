@@ -106,7 +106,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'default_secret_key',
-      { expiresIn: '1h' },
+      { expiresIn: '6h' },
     );
 
     // Redis에 세션 데이터 저장 (Hash 형식)

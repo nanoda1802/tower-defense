@@ -9,7 +9,7 @@ import {
   buffTowerHandler,
   slowTowerHandler,
 } from './tower-handler.js';
-import { nextWaveHandler } from './wave-handler.js';
+import { waveChangeHandler } from './wave-handler.js';
 import { handleRoomJoin, handleGameStateUpdate } from './room-handler.js';
 
 const eventHandlerMappings = {
@@ -24,7 +24,7 @@ const eventHandlerMappings = {
   44: attackTowerHandler, // 위치만 잡아 놓음
   45: buffTowerHandler,
   46: slowTowerHandler,
-  51: nextWaveHandler,
+  51: waveChangeHandler,
   101: handleRoomJoin,
   102: handleGameStateUpdate,
 };
