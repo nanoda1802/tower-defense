@@ -193,12 +193,11 @@ export const upgradeTowerHandler = (userId, payload) => {
     if (!userGold) {
       return { status: 'fail', message: 'No gold data for user' };
     }
-    console.log("NaN 후보 01 : ", userGold[userGold.length - 1].gold);
+
     // 나중에 특수 카드도 강화 하게 되면 아래 사용
     // const x = 2;
     // const cost = towerInfo.data.card === 'J' ? 11 * x : towerInfo.data.card === 'Q' ? 12 * x  : towerInfo.data.card === 'K' ? 13 * x : Number(towerInfo.data.card) * x;
     const cost = Number(towerInfo.data.card) * 2;
-    console.log("NaN 후보 02 : ", towerInfo.data.card);
     // 보유 골드 체크
     if (userGold[userGold.length - 1].gold < cost) {
       return { status: 'fail', message: 'Not enough money' };
@@ -375,8 +374,6 @@ export const buffTowerHandler = (userId, payload) => {
       }
     }
 
-    console.log('### towerInfo.buffTarget');
-    console.log(towerInfo);
     // 버프 받은 타워 목록 return
     return {
       status: 'success',
@@ -485,7 +482,6 @@ const getDistance = (baseX, baseY, targetX, targetY) => {
 
 //버프 상태 변경 함수
 const changeBuffStatus = (towerInfo, isBuff, positionXY, color) => {
-  console.log(' towerInfo.data.color : ', color);
   if (color === TOWER_COLOR_BLACK) {
     // 공격
     isBuff ? (towerInfo.data.attack += BUFF_ATTACK_VALUE) : (towerInfo.data.attack -= BUFF_ATTACK_VALUE);
