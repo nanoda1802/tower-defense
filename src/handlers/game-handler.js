@@ -45,7 +45,7 @@ export const gameStart = (userId, payload) => {
     Object.assign({}, towerData),
     false,
     null,
-    [],
+    null,
   );
   // [4] 스코어 초기화
   clearScore(userId);
