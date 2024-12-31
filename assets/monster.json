@@ -7,7 +7,7 @@
       "health": 10,
       "type": "monster",
       "attack": 1,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 5,
       "score": 10
     },
@@ -16,7 +16,7 @@
       "health": 20,
       "type": "monster",
       "attack": 2,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 10,
       "score": 20
     },
@@ -25,7 +25,7 @@
       "health": 30,
       "type": "monster",
       "attack": 3,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 15,
       "score": 30
     },
@@ -34,7 +34,7 @@
       "health": 40,
       "type": "monster",
       "attack": 4,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 20,
       "score": 40
     },
@@ -43,7 +43,7 @@
       "health": 50,
       "type": "monster",
       "attack": 5,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 25,
       "score": 50
     },
@@ -52,7 +52,7 @@
       "health": 100,
       "type": "boss",
       "attack": 10,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 50,
       "score": 100
     },
@@ -61,7 +61,7 @@
       "health": 200,
       "type": "boss",
       "attack": 20,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 100,
       "score": 200
     },
@@ -70,7 +70,7 @@
       "health": 300,
       "type": "boss",
       "attack": 30,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 150,
       "score": 300
     },
@@ -79,7 +79,7 @@
       "health": 400,
       "type": "boss",
       "attack": 40,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 200,
       "score": 400
     },
@@ -88,7 +88,7 @@
       "health": 500,
       "type": "boss",
       "attack": 50,
-      "speed": 2,
+      "speed": 0.2,
       "gold": 250,
       "score": 500
     }

@@ -49,6 +49,7 @@ export const createMonsterHandler = (userId, payload) => {
     }
 
     // 몬스터 정보 저장
+    const monsterType = monster.type;
     const monsterHealth = monster.health;
     const monsterAttack = monster.attack;
     const monsterSpeed = monster.speed;
@@ -71,6 +72,7 @@ export const createMonsterHandler = (userId, payload) => {
       status: "success",
       message: "몬스터 생성 성공",
       monsterId,
+      monsterType,
       monsterHealth,
       monsterAttack,
       monsterSpeed,
