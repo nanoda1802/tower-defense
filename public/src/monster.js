@@ -39,8 +39,8 @@ export class Monster {
     this.index = index;
   }
 
-  move() {
-    this.x += this.speed;
+  move(deltaTime) {
+    this.x += this.speed * deltaTime;
   }
 
   collideWith(base) {

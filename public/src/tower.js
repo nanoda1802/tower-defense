@@ -1,5 +1,7 @@
 export class Tower {
   isBuff = false;
+  isBuffed = false;
+  isAttack = false;
   constructor(x, y, towerImage, id, type, attack, attackSpeed, range) {
     this.id = id;
     this.type = type;
@@ -25,16 +27,17 @@ export class Tower {
         this.target.x + this.target.width / 2,
         this.target.y + this.target.height / 2,
       );
-      ctx.strokeStyle = "skyblue";
+      ctx.strokeStyle = this.isBuff ? "red" : "skyblue";
       ctx.lineWidth = 10;
       ctx.stroke();
       ctx.closePath();
-      this.beamDuration--;
+      this.isBuff ? 0 : this.beamDuration--;
     }
   }
 
   attack(monster) {
     if (this.attackInterval <= 0) {
+      this.isAttack = true;
       monster.currentHp -= this.attackPower;
       this.attackInterval = 180; // 3초 쿨타임 (초당 60프레임)
       this.beamDuration = 30; // 광선 지속 시간 (0.5초)
@@ -43,10 +46,14 @@ export class Tower {
   }
 
   buff(tower, buffValue) {
-    if (this.attackInterval <= 0) {
+    //여기서 반복문 돌아야하나......
+    if (!tower.isBuffed && this.attackInterval <= 0) {
       tower.attackPower += buffValue;
-      tower.isBuff = true;
+      tower.isBuffed = true;
       this.target = tower;
+      this.attackInterval = 180; // 3초 쿨타임 (초당 60프레임)
+      this.beamDuration = 30; // 광선 지속 시간 (0.5초)
+      this.isBuff = true;
     }
   }
 

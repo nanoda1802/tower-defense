@@ -128,7 +128,7 @@ export const getTowerHandler = (userId, payload) => {
       gold: resGold,
       positionX: positionX,
       positionY: positionY,
-      type: type,
+      type,
       data: towerInfo,
     };
   } catch (error) {
@@ -379,12 +379,21 @@ export const attackTowerHandler = (userId, payload) => {
     }
 
     // 좌표 검증 한다면
-    // const calculateX = calculateMonsterMove(monsterId, monsterIndex, targetInfo.timestamp);
+    // console.log("서버 시간 : ", Date.now());
+    // const calculateX = calculateMonsterMove(
+    //   monsterId,
+    //   monsterIndex,
+    //   targetInfo.timestamp,
+    // );
     // const tolerance = 10;
-    // if (calculateX < monsterPositionX || calculateX > monsterIndex + tolerance) {
+    // console.log("서버 계산 X : 클라가 준 X", calculateX, monsterPositionX);
+    // if (
+    //   calculateX < monsterPositionX ||
+    //   calculateX > monsterIndex + tolerance
+    // ) {
     //   return {
-    //     status: 'fail',
-    //     message: `There is not a ${monsterType === MONSTER_TYPE ? 'moster' : 'boss'}`,
+    //     status: "fail",
+    //     message: `There is not a ${monsterType === MONSTER_TYPE ? "moster" : "boss"}`,
     //   };
     // }
 
