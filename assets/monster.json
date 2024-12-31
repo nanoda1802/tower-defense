@@ -4,7 +4,7 @@
   "data": [
     {
       "id": 101,
-      "health": 10,
+      "health": 50,
       "type": "monster",
       "attack": 1,
       "speed": 0.2,
@@ -13,7 +13,7 @@
     },
     {
       "id": 102,
-      "health": 20,
+      "health": 60,
       "type": "monster",
       "attack": 2,
       "speed": 0.2,
@@ -22,7 +22,7 @@
     },
     {
       "id": 103,
-      "health": 30,
+      "health": 70,
       "type": "monster",
       "attack": 3,
       "speed": 0.2,
@@ -31,7 +31,7 @@
     },
     {
       "id": 104,
-      "health": 40,
+      "health": 80,
       "type": "monster",
       "attack": 4,
       "speed": 0.2,
@@ -40,7 +40,7 @@
     },
     {
       "id": 105,
-      "health": 50,
+      "health": 90,
       "type": "monster",
       "attack": 5,
       "speed": 0.2,
@@ -49,7 +49,7 @@
     },
     {
       "id": 201,
-      "health": 100,
+      "health": 200,
       "type": "boss",
       "attack": 10,
       "speed": 0.2,
@@ -58,7 +58,7 @@
     },
     {
       "id": 202,
-      "health": 200,
+      "health": 400,
       "type": "boss",
       "attack": 20,
       "speed": 0.2,
@@ -67,7 +67,7 @@
     },
     {
       "id": 203,
-      "health": 300,
+      "health": 600,
       "type": "boss",
       "attack": 30,
       "speed": 0.2,
@@ -76,7 +76,7 @@
     },
     {
       "id": 204,
-      "health": 400,
+      "health": 800,
       "type": "boss",
       "attack": 40,
       "speed": 0.2,
@@ -85,7 +85,7 @@
     },
     {
       "id": 205,
-      "health": 500,
+      "health": 1000,
       "type": "boss",
       "attack": 50,
       "speed": 0.2,

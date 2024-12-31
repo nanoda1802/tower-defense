@@ -662,7 +662,7 @@ function upgradeTower(tower) {
         tower.attackPower = data.attack;
         tower.attackSpeed = data.attack_speed;
         tower.range = data.range;
-        // [4] 타워 이미지 변경 
+        // [4] 타워 이미지 변경
         if (type === "pawn" && data.color === "black") {
           tower.image = blackPawnImages[+currentImageNum + 1];
         } else if (type === "pawn" && data.color === "red") {
