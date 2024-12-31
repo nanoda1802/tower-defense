@@ -351,7 +351,7 @@ export const attackTowerHandler = (userId, payload) => {
     }
 
     // J,Q 타워 체크 (J,Q 는 전용 핸들러가 따로 있음)
-    if (towerInfo.data.card === "J" || towerInfo.data.card === "Q") {
+    if (towerInfo.data.card === "J") {
       return {
         status: "fail",
         message: `'${towerInfo.data.card}' tower cannot be processed by this handler`,
