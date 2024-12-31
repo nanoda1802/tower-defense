@@ -22,14 +22,13 @@ const ctx = canvas.getContext("2d");
 
 let userGold = 0; // 유저 골드
 let HQ; // 기지 객체
-let initHp = 0; // 기지 체력
+let baseHp = 0; // 기지 체력
 let wave = 0;
 
-let monsterSpawnInterval = 200; // 몬스터 생성 주기
+let monsterSpawnInterval = 1500; // 몬스터 생성 주기
 let monsters = [];
 let towers = [];
 let monsterPath;
-let isDestroyed = false;
 
 let score = 0; // 게임 점수
 let highScore = 0; // 기존 최고 점수
@@ -48,7 +47,7 @@ function generatePath() {
   return path; // 준비된 경로 배열 반환
 }
 /* 준비된 배경과 경로 캔버스에 그리기 */
-export function drawMap(path) {
+function drawMap(path) {
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 그리기
   drawPath(path); // 경로 그리기
 }
@@ -88,10 +87,10 @@ function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.restore();
 }
 /* HQ 설치 */
-export function placeHQ() {
+function placeHQ() {
   // path의 마지막 지점 좌표 -> 랜덤 경로일 시 마지막 위치에 HQ 오도록 구현하신 듯
   const lastPoint = monsterPath[monsterPath.length - 1];
-  HQ = new Base(lastPoint.x, lastPoint.y, initHp);
+  HQ = new Base(lastPoint.x, lastPoint.y, baseHp);
   HQ.draw(ctx, baseImage);
 }
 /* 타워 설치 */
@@ -146,116 +145,55 @@ function placeNewTower(type, color) {
 }
 /* 몬스터 생성 */
 let monsterIndex = 0;
-function spawnMonster(currentWave) {
-  let monsterId = waveTable[currentWave - 1].monster_id;
-  const killCount = waveTable[currentWave - 1].monster_cnt;
-  if (killCount === monsterIndex + 1) {
-    monsterId = waveTable[currentWave - 1].boss_id;
-  }
+function spawnMonster() {
+  let currentWave = wave.wave;
   // [1] 서버에 메세지 보냄
-  sendMonster(31, {
+  sendEvent(31, {
     timestamp: Date.now(),
     waveId: waveTable[currentWave - 1].id,
-    monsterId,
+    monsterId: waveTable[currentWave - 1].monster_id,
     monsterIndex,
   }).then((res) => {
     if (res.status === "success") {
       // [2] 몬스터생성
-      if (res.isBoss) {
-        monsters.push(
-          new Monster(
-            monsterPath,
-            monsterImages[currentWave + 4],
-            res.monsterId,
-            res.monsterType,
-            res.monsterHealth,
-            res.monsterAttack,
-            res.monsterSpeed,
-            res.monsterGold,
-            res.monsterScore,
-            currentWave,
-            res.monsterIndex,
-          ),
-        );
-        wave.isKillBoss = false;
-        monsterIndex = 0;
-      } else if (!res.isBoss) {
-        monsters.push(
-          new Monster(
-            monsterPath,
-            monsterImages[currentWave - 1],
-            res.monsterId,
-            res.monsterType,
-            res.monsterHealth,
-            res.monsterAttack,
-            res.monsterSpeed,
-            res.monsterGold,
-            res.monsterScore,
-            currentWave,
-            monsterIndex,
-          ),
-        );
-        monsterIndex += 1; // [3] 인덱스 증가
-      }
+      monsters.push(
+        new Monster(
+          monsterPath,
+          monsterImages[currentWave - 1],
+          res.monsterId,
+          res.monsterHealth,
+          res.monsterAttack,
+          res.monsterSpeed,
+          res.monsterGold,
+          res.monsterScore,
+          currentWave,
+          monsterIndex,
+        ),
+      );
+      monsterIndex += 1; // [3] 인덱스 증가
+    }
+    // [4] 웨이브 바뀌면 인덱스 초기화
+    if (monsterIndex === waveTable[currentWave - 1].monster_cnt) {
+      monsterIndex = 0;
     }
   });
 }
-let prevTime = 0;
 /* 게임 루프 */
-export async function gameLoop() {
-  let now = Date.now();
-  let deltaTime = now - prevTime;
-  prevTime = now;
+async function gameLoop() {
   // [1] 배경과 경로, 웨이브 최신화
   drawMap(monsterPath);
-  monsterSpawnInterval -= 1;
-  if (wave.isKillBoss && monsterSpawnInterval <= 0) {
-    spawnMonster(wave.wave);
-    monsterSpawnInterval = 200;
-  }
+  wave.update();
   // [3] 타워 그리기와 몬스터 공격 판정 체크
-  towers.forEach((tower, towerIndex, towers) => {
+  towers.forEach((tower) => {
     tower.draw(ctx);
     tower.updateAttackInterval();
     // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
     monsters.forEach((monster) => {
-      if (monster.currentHp > 0) {
-        const distance = Math.sqrt(
-          Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
-        );
-        if (distance < tower.range) {
-          if ((tower.id === 2001 || tower.id === 2004) && !tower.isBuff) {
-            sendEvent(45, {
-              towerId: tower.id,
-              positionX: tower.x,
-              positionY: tower.y,
-            }).then((res) => {
-              // 일단 이 조건문 안에 있으면 안 될 거 같음 다른 타워들이랑 거리를 비교해야하는디
-              // 일단 동작 체크 해보자
-              tower.buff(towers[towerIndex - 1], res.buffValue);
-            });
-          } else if (tower.id !== 2001 && tower.id !== 2004) {
-            sendEvent(44, {
-              towerType: tower.type,
-              towerId: tower.id,
-              towerPositionX: tower.x,
-              towerPositionY: tower.y,
-              monsterType: monster.type,
-              monsterId: monster.id,
-              monsterPositionX: monster.x,
-              monsterPositionY: monster.y,
-              timestamp: Date.now(),
-              monsterIndex: monster.index,
-            }).then((res) => {
-              if (res.status === "success") {
-                tower.attack(monster);
-              } else if (res.status === "fail") {
-                alert(`공격 처리 실패!! ${res.message}`);
-              }
-            });
-          }
-          // 일단 대기
-        }
+      const distance = Math.sqrt(
+        Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
+      );
+      if (distance < tower.range) {
+        tower.attack(monster);
       }
     });
   });
@@ -264,31 +202,25 @@ export async function gameLoop() {
   HQ.draw(ctx, baseImage);
 
   // [5] 몬스터 이동과 게임오버 판정 체크
+  let isDestroyed;
   for (let i = monsters.length - 1; i >= 0; i--) {
     const monster = monsters[i];
-    wave.update(monster.index);
     // [5-1 A] 몬스터가 죽지 않았다면 계속 전진
     if (monster.currentHp > 0) {
-      monster.move(deltaTime);
+      monster.move();
       // [A-1] 몬스터가 HQ에 닿았다면 HQ 체력 감소, 만약 0 이하면 게임 오버 조건 ON
-      if (monster.x >= HQ.x && !monster.isEventProcessing) {
-        monster.isEventProcessing = true;
-        sendEvent(21, {
-          monsterId: monster.id,
-          monsterIndex: monster.index,
-          monsterX: monster.x,
-          monsterY: monster.y,
-          timestamp: Date.now(),
-        }).then((res) => {
-          if (res.status === "success") {
-            isDestroyed = monster.collideWith(HQ);
-            monsters.splice(i, 1); // 닿은 몬스터 제거
-            wave.targetKillCount -= 1;
-            wave.update(monster.index);
-          } else {
-            alert(`충돌 처리 실패!! ${res.message}`);
-          }
-        });
+      if (monster.x >= HQ.x) {
+        // sendEvent()
+        isDestroyed = monster.collideWith(HQ);
+        monsters.splice(i, 1); // 닿은 몬스터 제거
+        wave.targetKillCount -= 1;
+      }
+      // [A-2] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
+      if (isDestroyed) {
+        // sendEvent(12, {});
+        alert("Game Over!!");
+        location.reload(); // 새로고침
+        return; // 루프 종료
       }
       // [6] 몬스터 그리기
       monster.draw(ctx);
@@ -296,7 +228,7 @@ export async function gameLoop() {
       // [5-1 B] 몬스터가 죽었다면 배열에서 제거
       // [B-1] 서버에 메세지 보냄
       monster.isEventProcessing = true;
-      sendMonster(32, {
+      sendEvent(33, {
         timestamp: Date.now(),
         monsterId: monster.id,
         monsterIndex: monster.index,
@@ -312,37 +244,11 @@ export async function gameLoop() {
           // [B-3] 몬스터 제거 및 웨이브 목표 킬 수 차감
           monsters.splice(i, 1);
           wave.targetKillCount -= 1;
-          wave.update(monster.index);
         } else {
           alert(`처치 처리 실패!! : ${res.message}`);
         }
       });
     }
-  }
-  // [7] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
-  if (isDestroyed) {
-    sendEvent(12, {
-      timestamp: Date.now(),
-      score,
-      leftGold: userGold,
-      status: "gameOver",
-    }).then((res) => {
-      alert(`Game Over!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
-  }
-  if (wave.isClear) {
-    sendEvent(12, {
-      timestamp: Date.now(),
-      score,
-      leftGold: userGold,
-      status: "clear",
-    }).then((res) => {
-      alert(`Game Clear!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
   }
   // [7] (수정 예정) 상태 정보 표시
   ctx.font = "25px Times New Roman";
@@ -359,38 +265,36 @@ export async function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 /* 게임 첫 실행 */
-async function initGame() {
+function initGame() {
   if (isInitGame) {
     return; // [1] 이미 실행된 상태면 즉시 탈출
   }
-  // [2] 서버에 게임 시작 알림
-  await sendEvent(11, { timestamp: Date.now() }).then((res) => {
+  // [2] 필요한 요소들 준비 및 초기화
+  monsters = [];
+  towers = [];
+  score = 0;
+  monsterPath = generatePath(); // 몬스터 경로 준비
+  drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
+  placeHQ(); // 기지 배치
+  wave = new Wave(); // 웨이브 생성
+  wave.setWave();
+  // // [3] 생성 주기에 맞게 몬스터 생성 시작
+  setInterval(spawnMonster, monsterSpawnInterval);
+  // [4] 게임 실행 상태로 바꾸고 루프 ON
+  isInitGame = true;
+  gameLoop();
+  // [5] 서버에 게임 시작 알림
+  sendEvent(11, { timestamp: Date.now() }).then((res) => {
     if (res.status === "success") {
       userGold = res.gold;
-      initHp = res.initHp;
     }
-    // [3] 필요한 요소들 준비 및 초기화
-    monsters = [];
-    towers = [];
-    score = 0;
-    monsterIndex = 0;
-    monsterPath = generatePath(); // 몬스터 경로 준비
-    placeHQ(); // 기지 배치
-    drawMap(); // 맵 초기화 (배경, 몬스터 경로 그리기)
-    wave = new Wave(); // 웨이브 생성
-    wave.setWave();
-    // [4] 게임 실행 상태로 바꾸고 루프 ON
-    isInitGame = true;
-    gameLoop();
   });
 }
-
 /* 이미지 로드 후 서버와 소켓 연결 */
 let userId = null;
 export let monsterTable = null;
 export let waveTable = null;
 export let sendEvent = null;
-export let sendMonster = null;
 // [1] 이미지 로드 작업
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
@@ -425,27 +329,6 @@ Promise.all([
   serverSocket.on("connect", () => {
     console.log("서버와 소켓 연결 성공");
   });
-
-  // 서버로 "event" 메세지 보내기
-  sendEvent = (handlerId, payload) => {
-    return new Promise((resolve, reject) => {
-      serverSocket.emit("event", {
-        clientVersion: "1.0.0",
-        userId,
-        handlerId,
-        payload,
-      });
-      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once("response", (data) => {
-        if (data.handlerId === handlerId) {
-          resolve(data);
-        } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
-        }
-      });
-    });
-  };
-
   // [2-3 B] 소켓 연결 오류 응답
   serverSocket.on("connect_error", (err) => {
     if (err.message === "Authentication error") {
@@ -473,9 +356,9 @@ Promise.all([
     }
   });
 
-  // 서버에서 "eventResponse" 메세지를 받았을 때
-  serverSocket.on("eventResponse", (data) => {
-    console.log("eventResponse : ", data);
+  // 서버에서 "response" 메세지를 받았을 때
+  serverSocket.on("response", (data) => {
+    console.log("response : ", data);
   });
 
   // 서버로 "event" 메세지 보내기
@@ -488,29 +371,8 @@ Promise.all([
         payload,
       });
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once("eventResponse", (data) => {
+      serverSocket.once("response", (data) => {
         if (data.handlerId === handlerId) {
-          resolve(data);
-        } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
-        }
-      });
-    });
-  };
-
-  // 서버로 "monster" 메세지 보내기
-  sendMonster = (handlerId, payload) => {
-    return new Promise((resolve, reject) => {
-      serverSocket.emit("monster", {
-        clientVersion: "1.0.0",
-        userId,
-        handlerId,
-        payload,
-      });
-      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once("monsterResponse", (data) => {
-        if (data.handlerId === handlerId) {
-          console.log("monsterResponse", data);
           resolve(data);
         } else {
           reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
@@ -709,5 +571,3 @@ canvas.addEventListener("click", (event) => {
     selectedTower = null; // 타워 선택 초기화
   }
 });
-
-export { towers, monsters, HQ, baseImage };

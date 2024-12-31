@@ -99,14 +99,23 @@ router.post('/login', async (req, res) => {
     const existingSession = await redisClient.hGetAll(sessionKey);
 
     if (existingSession && existingSession.ip === clientIp) {
-      return res.status(400).json({ message: '이미 로그인된 계정입니다.' });
+      return res.status(400).json({
+        message: '이미 다른 곳에 로그인되어 있습니다. 로그아웃 하시겠습니까?',
+        sessionExists: true,
+      });
+    }
+
+    // 기존 세션 강제 종료 (사용자가 확인한 경우)
+    if (existingSession) {
+      await redisClient.del(sessionKey);
+      console.log(`기존 세션 삭제: ${sessionKey}`);
     }
 
     // JWT 생성
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'default_secret_key',
-      { expiresIn: '1h' },
+      { expiresIn: '6h' },
     );
 
     // Redis에 세션 데이터 저장 (Hash 형식)
@@ -118,8 +127,8 @@ router.post('/login', async (req, res) => {
       token,
     });
 
-    // TTL 설정 (1시간)
-    await redisClient.expire(sessionKey, 3600);
+    // TTL 설정 (6시간)
+    await redisClient.expire(sessionKey, 21600);
 
     res.status(200).json({ message: '로그인 성공', token, email });
   } catch (err) {
@@ -128,35 +137,36 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 로그아웃 API
 router.delete('/logout', async (req, res) => {
-  const redisClient = req.redisClient; // app.js에서 전달된 Redis 클라이언트
+  const redisClient = req.redisClient; // Redis 클라이언트
   const { email } = req.body;
 
   try {
     // Authorization 헤더에서 JWT 토큰 추출
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'Unauthorized: No token provided' });
-    }
 
-    // JWT 토큰 검증 및 이메일 일치 여부 확인
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key');
+    if (token) {
+      // JWT가 제공된 경우 - 권한 검증
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key');
 
-      if (!decoded.email || decoded.email !== email) {
-        console.warn(`Token email (${decoded.email}) does not match request email (${email}).`);
-        return res.status(401).json({ message: 'Invalid token for the provided email.' });
+        if (!decoded.email || decoded.email !== email) {
+          console.warn(`Token email (${decoded.email}) does not match request email (${email}).`);
+          return res.status(401).json({ message: 'Invalid token for the provided email.' });
+        }
+      } catch (err) {
+        console.error('JWT verification error:', err.message);
+        return res.status(401).json({ message: 'Invalid token' });
       }
-    } catch (err) {
-      console.error('JWT verification error:', err.message);
-      return res.status(401).json({ message: 'Invalid token' });
+    } else {
+      // JWT가 제공되지 않은 경우 - 강제 로그아웃
+      console.warn('No token provided. Proceeding with forced logout.');
     }
 
     // Redis에서 세션 삭제
     const sessionKey = `session:${email}`;
-    console.log('sessionKey : ', sessionKey);
-
     const sessionExists = await redisClient.exists(sessionKey);
 
     if (sessionExists) {

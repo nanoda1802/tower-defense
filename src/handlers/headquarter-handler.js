@@ -25,7 +25,6 @@ export const collideHandler = (userId, payload) => {
     monsterIndex,
     createTime,
   );
-
   const tolerance = 10; // 허용 오차 범위 설정
 
   // 몬스터가 본부에 충돌했을 때 처리
