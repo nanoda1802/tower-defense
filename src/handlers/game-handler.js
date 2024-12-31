@@ -1,17 +1,11 @@
-import { getGameAssets } from "../inits/assets.js";
-import { setGold, clearGold, getGold } from "../models/gold-model.js";
-import { clearWave, setWave } from "../models/wave-model.js";
-import { clearTower, clearRemoveTower } from "../models/tower-model.js";
-import { clearScore, getScore, setScore } from "../models/score-model.js";
-import {
-  clearHeadquarter,
-  setHeadquarter,
-  getHeadquarter,
-} from "../models/headquarter.model.js";
-import {
-  clearAliveMonsters,
-  clearDeathMonsters,
-} from "../models/monster-model.js";
+import { getGameAssets } from '../inits/assets.js';
+import { setGold, clearGold, getGold } from '../models/gold-model.js';
+import { clearWave, setWave } from '../models/wave-model.js';
+import { setTower, clearTower, clearRemoveTower, getTower } from '../models/tower-model.js';
+import { clearScore, getScore, setScore } from '../models/score-model.js';
+import { clearHeadquarter, setHeadquarter, getHeadquarter } from '../models/headquarter.model.js';
+import { clearAliveMonsters, clearDeathMonsters } from '../models/monster-model.js';
+import { TOWER_TYPE_PAWN } from '../constants.js';
 /* Game Start 11 */
 //userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
@@ -20,11 +14,27 @@ export const gameStart = (userId, payload) => {
   setWave(userId, 11, payload.timestamp);
   // [2] 골드 정보 초기화
   clearGold(userId);
-  setGold(userId, 100, 0, "start", payload.timestamp);
+  setGold(userId, 100, 0, 'start', payload.timestamp);
   const initGold = getGold(userId)[0].gold;
   // [3] 타워 초기화
   clearTower(userId);
   clearRemoveTower(userId);
+  const randomNum = Math.round(Math.random());
+  const positionX = (Math.floor(Math.random() * 7) + 3) * 100;
+  const positionY = randomNum === 0 ? 300 : 500;
+  const towerType = TOWER_TYPE_PAWN;
+  const towerData = getGameAssets().pawnTowers.data[randomNum];
+  setTower(
+    userId,
+    positionX,
+    positionY,
+    towerType,
+    payload.timestamp,
+    Object.assign({}, towerData),
+    false,
+    null,
+    [],
+  );
   // [4] 스코어 초기화
   clearScore(userId);
   setScore(userId, 0, 0, payload.timestamp);
@@ -37,10 +47,14 @@ export const gameStart = (userId, payload) => {
   clearDeathMonsters(userId);
   // [7] 성공 응답 반환
   return {
-    status: "success",
-    message: "Game Started!!",
+    status: 'success',
+    message: 'Game Started!!',
     gold: initGold,
     initHp,
+    positionX,
+    positionY,
+    type: towerType,
+    data: towerData,
   };
 };
 
@@ -49,12 +63,12 @@ export const gameEnd = (userId, payload) => {
   // payload 구조 및 타입 검사
   if (
     !payload ||
-    typeof payload.timestamp !== "number" ||
-    typeof payload.score !== "number" ||
-    typeof payload.leftGold !== "number" ||
+    typeof payload.timestamp !== 'number' ||
+    typeof payload.score !== 'number' ||
+    typeof payload.leftGold !== 'number' ||
     !['clear', 'gameOver'].includes(payload.status) // 상태가 'clear' 또는 'gameOver'인지 확인
   ) {
-    throw new Error("잘못된 payload 형식");
+    throw new Error('잘못된 payload 형식');
   }
 
   const { timestamp: gameEndTime, score, leftGold, status } = payload;
@@ -80,18 +94,18 @@ export const gameEnd = (userId, payload) => {
     );
   }
 
-  let finalScore = serverScore
+  let finalScore = serverScore;
 
   if (status === 'clear') {
     finalScore += serverGold; // 게임 클리어 시 서버 골드와 클라이언트의 남은 골드를 더함
   } else if (status === 'gameOver') {
-    finalScore // 게임 오버 시 골드를 더하지 않음
+    finalScore; // 게임 오버 시 골드를 더하지 않음
   }
 
   // 최종 결과 반환
   return {
-    status: "success",
-    message: "게임이 성공적으로 종료되었습니다.",
+    status: 'success',
+    message: '게임이 성공적으로 종료되었습니다.',
     score: finalScore,
     details: {
       userId,
@@ -102,7 +116,6 @@ export const gameEnd = (userId, payload) => {
     },
   };
 };
-
 
 /* Game Save 13 */
 export const gameSave = (userId, payload) => {
