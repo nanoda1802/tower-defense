@@ -8,14 +8,15 @@ import {
   attackHandlerMappings,
 } from './handler-mapping.js';
 import { getGameAssets } from '../inits/assets.js';
+import redisClient from '../inits/redis.js';
 
 /* 연결 해제 관리 */
-export const handleDisconnect = async (socket, userId) => {
+export const handleDisconnect = async (socket) => {
   removeUser(socket.id);
   console.log(`User disconnected: ${socket.id}`);
 
   // Redis에서 접속 정보 제거
-  await redisClient.hDel('onlineUsers', userId);
+  // await redisClient.hDel('onlineUsers', userId);
 
   console.log(`Current users`, getUser());
 };
@@ -26,7 +27,7 @@ export const handleConnection = async (socket, userId) => {
   console.log('Current users : ', getUser());
 
   // Redis에 접속 정보 저장
-  await redisClient.hSet('onlineUsers', userId, socket.id);
+  // await redisClient.hSet('onlineUsers', userId, socket.id);
 
   // [1] Room 인스턴스 생성
   const newRoomKey = rooms.length + 1;

@@ -442,6 +442,7 @@ async function initGame() {
     monsters = [];
     towers = [];
     score = 0;
+    highScore = res.highScore;
     monsterIndex = 0;
     monsterPath = generatePath(); // 몬스터 경로 준비
     placeHQ(); // 기지 배치

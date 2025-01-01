@@ -33,7 +33,7 @@
       const token = localStorage.getItem('accessToken');
       const email = localStorage.getItem('email');
 
-      // // 유저 보드 초기화 함수
+      // 유저 보드 초기화 함수
       // const initializeUserBoard = () => {
       //   const socket = io('http://localhost:3000'); // 서버와 WebSocket 연결
 
@@ -112,9 +112,9 @@
         });
         authButtons.appendChild(logoutButton);
         // DOMContentLoaded 이후 유저 보드 초기화
-        document.addEventListener('DOMContentLoaded', () => {
-          // initializeUserBoard(); // 유저 보드 초기화
-        });
+        // document.addEventListener('DOMContentLoaded', () => {
+        //   // initializeUserBoard(); // 유저 보드 초기화
+        // });
       } else {
         // 비로그인 상태인 경우 로그인/회원가입 버튼 표시
         const loginButton = document.createElement('button');

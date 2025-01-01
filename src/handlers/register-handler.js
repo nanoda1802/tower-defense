@@ -14,11 +14,11 @@ const registerHandler = (io) => {
     const userId = socket.user?.userId; // JWT에서 추출된 userId
     const socketId = socket.id;
 
-    if (userId) {
-      // Redis에 사용자 정보 저장
-      await redisClient.hSet('onlineUsers', userId, socketId);
-      console.log(`User connected: ${userId} with socket ID: ${socketId}`);
-    }
+    // if (userId) {
+    //   // Redis에 사용자 정보 저장
+    //   await redisClient.hSet('onlineUsers', userId, socketId);
+    //   console.log(`User connected: ${userId} with socket ID: ${socketId}`);
+    // }
 
     addUser({ userId, socketId });
     handleConnection(socket, userId);
@@ -44,15 +44,15 @@ const registerHandler = (io) => {
     });
 
     // 현재 접속자 목록 요청 처리
-    socket.on('getOnlineUsers', async (callback) => {
-      try {
-        const onlineUsers = await redisClient.hGetAll('onlineUsers'); // 모든 접속자 조회
-        callback({ status: 'success', users: onlineUsers });
-      } catch (err) {
-        console.error(err);
-        callback({ status: 'error', message: '접속자 목록을 가져오는 중 오류가 발생했습니다.' });
-      }
-    });
+    // socket.on('getOnlineUsers', async (callback) => {
+    //   try {
+    //     const onlineUsers = await redisClient.hGetAll('onlineUsers'); // 모든 접속자 조회
+    //     callback({ status: 'success', users: onlineUsers });
+    //   } catch (err) {
+    //     console.error(err);
+    //     callback({ status: 'error', message: '접속자 목록을 가져오는 중 오류가 발생했습니다.' });
+    //   }
+    // });
 
     //Event
     socket.on('event', (data) => handleEvent(io, socket, data));
@@ -68,10 +68,10 @@ const registerHandler = (io) => {
 
     //Disconnect
     socket.on('disconnect', async () => {
-      if (userId) {
-        await redisClient.hDel('onlineUsers', userId); // Redis에서 사용자 제거
-        console.log(`User disconnected: ${userId}`);
-      }
+      // if (userId) {
+      //   await redisClient.hDel('onlineUsers', userId); // Redis에서 사용자 제거
+      //   console.log(`User disconnected: ${userId}`);
+      // }
       handleDisconnect(socket, userId);
     });
   });

@@ -1,9 +1,32 @@
 import { getGameAssets } from '../inits/assets.js';
 import { rooms } from '../room/room.js';
 import { TOWER_TYPE_PAWN } from '../constants.js';
+import redisClient from '../inits/redis.js';
+import { prisma } from '../inits/prisma.js';
+
+// 사용자 ID를 기반으로 이메일을 가져오는 함수
+export const getUserEmail = async (userId) => {
+  try {
+    // Prisma를 사용하여 MySQL에서 사용자 이메일 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }, // 이메일만 선택
+    });
+
+    // 사용자가 없거나 이메일이 없는 경우 예외 처리
+    if (!user || !user.email) {
+      throw new Error(`사용자 ID(${userId})에 해당하는 이메일을 찾을 수 없습니다.`);
+    }
+
+    return user.email;
+  } catch (error) {
+    console.error('사용자 이메일 조회 실패:', error.message);
+    throw new Error('사용자 이메일을 가져오는 중 오류가 발생했습니다.');
+  }
+};
 
 /* Game Start 11 */
-export const gameStart = (userId, payload) => {
+export const gameStart = async (userId, payload) => {
   // [1] 게임 시작 시간 추출
   const startTime = payload.timestamp;
   // [2] 서버에서 해당 유저의 room 가져오기
@@ -36,6 +59,18 @@ export const gameStart = (userId, payload) => {
     null,
     null,
   );
+
+  // Redis LeaderBoard에서 최고기록 가져오기 = HighScore
+  const leaderboardData = await redisClient.sendCommand([
+    'ZREVRANGE',
+    'leaderboard',
+    '0',
+    '0', // 상위 1개만 가져옴
+    'WITHSCORES',
+  ]);
+
+  // 점수만 추출
+  const highScore = leaderboardData[1]; // 첫 번째 값의 점수는 인덱스 1에 위치
   // [8] 성공 응답 반환
   return {
     status: 'success',
@@ -46,6 +81,7 @@ export const gameStart = (userId, payload) => {
     positionY,
     type: towerType,
     data: towerData,
+    highScore,
   };
 };
 
@@ -137,7 +173,7 @@ export const gameEnd = async (userId, payload) => {
         email,
         finalScore,
         leftGold,
-        gameEndTime,
+        gameEndTime: endTime,
         status, // 게임 상태도 결과에 포함
       },
     };
