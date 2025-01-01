@@ -1,7 +1,19 @@
 export class Tower {
   isBuff = false;
   isBuffed = false;
-  constructor(x, y, towerImage, id, type, attack, attackSpeed, range, buffTarget, isGetBuff, buffTowerPos) {
+  constructor(
+    x,
+    y,
+    towerImage,
+    id,
+    type,
+    attack,
+    attackSpeed,
+    range,
+    buffTarget,
+    isGetBuff,
+    buffTowerPos,
+  ) {
     this.id = id;
     this.type = type; // 일반 : pawn , 특수 : special
     this.x = x; // 타워 이미지 x 좌표
@@ -15,9 +27,9 @@ export class Tower {
     this.attackSpeed = attackSpeed;
     this.beamDuration = 0; // 타워 광선 지속 시간
     this.target = null; // 타워 광선의 목표
-    this.buffTarget = buffTarget;
-    this.isGetBuff = isGetBuff;
-    this.buffTowerPos = buffTowerPos;
+    this.buffTarget = null;
+    this.isGetBuff = false;
+    this.buffTowerPos = null;
   }
 
   draw(ctx) {
@@ -25,8 +37,11 @@ export class Tower {
     if (this.beamDuration > 0 && this.target) {
       ctx.beginPath();
       ctx.moveTo(this.x + this.width / 2, this.y + this.height / 2);
-      ctx.lineTo(this.target.x + this.target.width / 2, this.target.y + this.target.height / 2);
-      ctx.strokeStyle = this.isBuff ? 'red' : 'skyblue';
+      ctx.lineTo(
+        this.target.x + this.target.width / 2,
+        this.target.y + this.target.height / 2,
+      );
+      ctx.strokeStyle = this.isBuff ? "red" : "skyblue";
       ctx.lineWidth = 10;
       ctx.stroke();
       ctx.closePath();
@@ -44,8 +59,14 @@ export class Tower {
   }
 
   buffStatus(buffValue, color, isBuff, buffTowerPos) {
-    console.log('color : ', color, 'this.attackSpeed : ', this.attackSpeed, buffValue);
-    if (color === 'black') {
+    console.log(
+      "color : ",
+      color,
+      "this.attackSpeed : ",
+      this.attackSpeed,
+      buffValue,
+    );
+    if (color === "black") {
       // 공격
       if (isBuff) {
         this.attackPower += buffValue;
@@ -66,7 +87,7 @@ export class Tower {
     }
 
     this.buffTowerPos = buffTowerPos;
-    console.log('this.attackSpeed : ', this.attackSpeed);
+    console.log("this.attackSpeed : ", this.attackSpeed);
   }
 
   updateAttackInterval() {
