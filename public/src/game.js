@@ -101,7 +101,6 @@ function placeNewTower(type, color) {
     }).then((res) => {
       // [3] 검증 성공 시 클라에 적용
       if (res.status === 'success') {
-        console.log(res);
         const { positionX: x, positionY: y, type, data } = res;
         const towerNum = data.id;
         // [4] 응답 받은 타워 정보 적용해 설치
@@ -120,6 +119,31 @@ function placeNewTower(type, color) {
         userGold -= res.cost;
         // [6] 클릭 위치 초기화
         selectedSpot = null;
+
+        if ((tower.id === 2001 || tower.id === 2004) && towers.length > 1) {
+          sendEvent(45, {
+            towerId: tower.id,
+            positionX: tower.x,
+            positionY: tower.y,
+          }).then((res) => {
+            let tempTarget = null;
+            //버프 대상 타워가 있으면 처리
+            if (res.buffTarget) {
+              towers.forEach((targetTower) => {
+                //대상 타워 버프 처리
+                if (!targetTower.isGetBuff) {
+                  if (targetTower.x === res.buffTarget.positionX && targetTower.y === res.buffTarget.positionY) {
+                    targetTower.buffStatus(res.buffValue, res.color, true, res.buffTarget.buffTowerPos);
+                    tempTarget = targetTower;
+                  }
+                }
+              });
+
+              // 현재 버프 타워의 버프 대상 정보 갱신 및 빔 그리기 처리
+              tower.updateBuffTowers(res.buffTarget, tempTarget);
+            }
+          });
+        }
       } else {
         alert(`설치 실패!! : ${res.message}`);
       }
@@ -138,16 +162,7 @@ function placeInitialTowers(res) {
   } else if (towerNum === 1001) {
     towerImage = redPawnImages[0];
   }
-  const tower = new Tower(
-    x,
-    y,
-    towerImage,
-    towerNum,
-    type,
-    data.attack,
-    data.attack_speed,
-    data.range,
-  );
+  const tower = new Tower(x, y, towerImage, towerNum, type, data.attack, data.attack_speed, data.range);
   towers.push(tower);
   tower.draw(ctx);
 }
@@ -226,59 +241,34 @@ export async function gameLoop() {
     tower.draw(ctx);
     tower.updateAttackInterval();
 
-    if (tower.id === 2001 || tower.id === 2004) {
-      if (towers.length > 1 && !tower.buffTarget) {
-        sendEvent(45, {
-          towerId: tower.id,
-          positionX: tower.x,
-          positionY: tower.y,
-        }).then((res) => {
-          let tempTarget = null;
-          console.log('res : ', res);
-          towers.forEach((targetTower) => {
-            //대상 타워 버프 처리
-            if (!targetTower.isGetBuff) {
-              if (targetTower.x === res.buffTarget.positionX && targetTower.y === res.buffTarget.positionY) {
-                targetTower.buffStatus(res.buffValue, res.color, true, res.buffTarget.buffTowerPos);
-                tempTarget = targetTower;
+    // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
+    monsters.forEach((monster) => {
+      if (monster.currentHp > 0) {
+        const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
+        if (distance < tower.range) {
+          if (tower.beamDuration <= 0 && tower.id !== 2001 && tower.id !== 2004) {
+            sendEvent(44, {
+              towerType: tower.type,
+              towerId: tower.id,
+              towerPositionX: tower.x,
+              towerPositionY: tower.y,
+              monsterType: monster.type,
+              monsterId: monster.id,
+              monsterPositionX: monster.x,
+              monsterPositionY: monster.y,
+              timestamp: Date.now(),
+              monsterIndex: monster.index,
+            }).then((res) => {
+              if (res.status === 'success') {
+                tower.attack(monster);
+              } else if (res.status === 'fail') {
+                alert(`공격 처리 실패!! ${res.message}`);
               }
-            }
-          });
-
-          // 현재 버프 타워의 버프 대상 정보 갱신 및 빔 그리기 처리
-          tower.updateBuffTowers(res.buffTarget, tempTarget);
-        });
-      }
-    } else {
-      // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
-      monsters.forEach((monster) => {
-        if (monster.currentHp > 0) {
-          const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
-          if (distance < tower.range) {
-            if (tower.beamDuration <= 0) {
-              sendEvent(44, {
-                towerType: tower.type,
-                towerId: tower.id,
-                towerPositionX: tower.x,
-                towerPositionY: tower.y,
-                monsterType: monster.type,
-                monsterId: monster.id,
-                monsterPositionX: monster.x,
-                monsterPositionY: monster.y,
-                timestamp: Date.now(),
-                monsterIndex: monster.index,
-              }).then((res) => {
-                if (res.status === 'success') {
-                  tower.attack(monster);
-                } else if (res.status === 'fail') {
-                  alert(`공격 처리 실패!! ${res.message}`);
-                }
-              });
-            }
+            });
           }
         }
-      });
-    }
+      }
+    });
   });
 
   // [4] HQ 피격돼서 잔여 체력 변했을 수 있으니 프레임마다 최신화
@@ -606,45 +596,44 @@ function hideTowerInfo() {
 /* 타워 판매 */
 function sellTower(tower) {
   // [1] 서버에 메세지 보냄
-  console.log('####삭제');
-  console.log(tower);
-  sendEvent(42, {
-    type: tower.type,
-    towerId: tower.id,
-    positionX: tower.x,
-    positionY: tower.y,
-    timestamp: Date.now(),
-  }).then((res) => {
-    if (res.status === 'success') {
-      // 버프 타워 삭제인 경우
-      if ((tower.id === 2001 || tower.id === 2004) && tower.buffTarget) {
-        towers.forEach((targetTower) => {
-          if (targetTower.id === tower.buffTarget.data.id && targetTower.x === tower.buffTarget.positionX && targetTower.y === tower.buffTarget.positionY) {
-            targetTower.buffStatus(res.buffValue, tower.id === 2001 ? 'red' : 'black', false);
-          }
-        });
-      } else if (tower.isGetBuff) {
-        console.log('### 버프 받은 타워 삭제');
-        const buffTowerPosition = tower.buffTowerPos.split(',');
-        console.log('buffTowerPosition : ', buffTowerPosition[0], buffTowerPosition[1]);
-        towers.forEach((targetTower) => {
-          if (targetTower.x === Number(buffTowerPosition[0]) && targetTower.y === Number(buffTowerPosition[1])) {
-            targetTower.updateBuffTowers(null, null);
-            console.log(targetTower);
-          }
-        });
-      }
+  if (!tower.isGetBuff) {
+    sendEvent(42, {
+      type: tower.type,
+      towerId: tower.id,
+      positionX: tower.x,
+      positionY: tower.y,
+      timestamp: Date.now(),
+    }).then((res) => {
+      if (res.status === 'success') {
+        // 버프 타워 삭제인 경우
+        if ((tower.id === 2001 || tower.id === 2004) && tower.buffTarget) {
+          towers.forEach((targetTower) => {
+            if (targetTower.id === tower.buffTarget.data.id && targetTower.x === tower.buffTarget.positionX && targetTower.y === tower.buffTarget.positionY) {
+              targetTower.buffStatus(res.buffValue, tower.id === 2001 ? 'red' : 'black', false);
+            }
+          });
+        } else if (tower.isGetBuff) {
+          const buffTowerPosition = tower.buffTowerPos.split(',');
+          towers.forEach((targetTower) => {
+            if (targetTower.x === Number(buffTowerPosition[0]) && targetTower.y === Number(buffTowerPosition[1])) {
+              targetTower.updateBuffTowers(null, null);
+            }
+          });
+        }
 
-      const index = towers.indexOf(tower);
-      if (index > -1) {
-        userGold += res.price; // [2] 응답받은 가격만큼 골드 획득
-        towers.splice(index, 1); // [3] 타워 목록에서 제거
+        const index = towers.indexOf(tower);
+        if (index > -1) {
+          userGold += res.price; // [2] 응답받은 가격만큼 골드 획득
+          towers.splice(index, 1); // [3] 타워 목록에서 제거
+        }
+      } else {
+        alert(`판매 실패!! : ${res.message}`);
       }
-    } else {
-      alert(`판매 실패!! : ${res.message}`);
-    }
-    hideTowerInfo(); // [4] 정보 패널 다시 숨김
-  });
+      hideTowerInfo(); // [4] 정보 패널 다시 숨김
+    });
+  } else {
+    alert('버프가 적용된 타워는 판매할 수 없습니다.');
+  }
 }
 
 /* 타워 승급 */
@@ -671,7 +660,7 @@ function upgradeTower(tower) {
         tower.attackSpeed = data.attack_speed;
         tower.range = data.range;
         // [4] 타워 이미지 변경
-        if (type === "pawn" && data.color === "black") {
+        if (type === 'pawn' && data.color === 'black') {
           tower.image = blackPawnImages[+currentImageNum + 1];
         } else if (type === 'pawn' && data.color === 'red') {
           tower.image = redPawnImages[+currentImageNum + 1];
