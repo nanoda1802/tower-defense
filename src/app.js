@@ -8,6 +8,7 @@ import redisClient from './inits/redis.js'; // Redis 클라이언트 가져오�
 import initSocket from './inits/socket.js';
 import { loadGameAssets } from './inits/assets.js';
 import AccountRouter from './routes/account-router.js';
+import rankingRouter from './routes/ranking-router.js'; // 랭킹 라우터
 
 // .env 파일 로드
 dotenv.config();
@@ -45,7 +46,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 /* [2] 정적 파일 서비스 */
 app.use(express.static('public')); // public 폴더 내의 파일을 정적 상태로 외부로 제공
-
+// Router
+app.use('/api/ranking', rankingRouter);
 app.use(
   '/api/account',
   (req, res, next) => {
