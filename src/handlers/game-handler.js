@@ -28,7 +28,7 @@ export const gameStart = (userId, payload) => {
   clearGold(userId);
   setGold(userId, 100, 0, "start", payload.timestamp);
   const initGold = getGold(userId)[0].gold;
-  // [3] 타워 초기화
+  // [3] 타워 초기화 및 초기 타워 설치
   clearTower(userId);
   clearRemoveTower(userId);
   const randomNum = Math.round(Math.random());
@@ -50,7 +50,7 @@ export const gameStart = (userId, payload) => {
   // [4] 스코어 초기화
   clearScore(userId);
   setScore(userId, 0, 0, payload.timestamp);
-  // [5] hQ 채력 초기화
+  // [5] hQ 체력 초기화
   clearHeadquarter(userId);
   setHeadquarter(userId, 10, payload.timestamp);
   const initHp = getHeadquarter(userId)[0].hp;
@@ -91,33 +91,35 @@ export const gameEnd = (userId, payload) => {
 
   const serverScore = scores[scores.length - 1].sumScore || 0; // 최신 점수 가져오기
   const serverGold = gold[gold.length - 1].gold || 0; // 최신 골드 가져오기
-
+  const tolerance = 50;
   // 클라이언트와 서버 점수 비교
-  if (serverScore !== score) {
+  if (Math.abs(serverScore - score) > tolerance) {
     throw new Error(
       `점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`,
     );
   }
 
   // 클라이언트와 서버 골드 비교
-  if (serverGold !== leftGold) {
+  if (Math.abs(serverGold - leftGold) > tolerance) {
     throw new Error(
       `골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`,
     );
   }
 
   let finalScore = serverScore;
-
+  let message = "";
   if (status === "clear") {
     finalScore += serverGold; // 게임 클리어 시 서버 골드와 클라이언트의 남은 골드를 더함
+    message = `클리어로 추가 점수 ${serverGold}점을 얻어 최종 점수 ${finalScore}점 입니다!`;
   } else if (status === "gameOver") {
     finalScore; // 게임 오버 시 골드를 더하지 않음
+    message = `게임오버로 최종 점수 ${finalScore}점 입니다!`;
   }
 
   // 최종 결과 반환
   return {
     status: "success",
-    message: "게임이 성공적으로 종료되었습니다.",
+    message,
     score: finalScore,
     details: {
       userId,

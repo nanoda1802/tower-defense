@@ -4,6 +4,7 @@ import { Tower } from "./tower.js";
 import { Wave } from "./wave.js";
 import {
   backgroundImage,
+  highlightImage,
   blackPawnImages,
   redPawnImages,
   specialImages,
@@ -12,27 +13,26 @@ import {
   monsterImages,
 } from "../elements/images.js";
 
-/* 
-  어딘가에 엑세스 토큰이 저장이 안되어 있다면 로그인을 유도하는 코드를 여기에 추가해주세요!
-*/
-
-export let serverSocket; // 서버 웹소켓 객체
+/* 변수 선언부 */
+// [1] 소켓 객체 생성
+export let serverSocket;
+// [2] 캔버스 준비
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-
-let userGold = 0; // 유저 골드
-let HQ; // 기지 객체
-let initHp = 0; // 기지 체력
-let wave = 0;
-
-let monsterSpawnInterval = 200; // 몬스터 생성 주기
-let monsters = [];
+// [3] 플레이어 관련 변수
+let userGold = 0;
+let HQ;
+let initHp = 0;
+let score = 0;
 let towers = [];
+// [4] 몬스터 관련 변수
+let monsterSpawnInterval = 200;
+let monsters = [];
 let monsterPath;
+// [5] 게임 관련 변수
+let highScore = 0;
+let wave = 0;
 let isDestroyed = false;
-
-let score = 0; // 게임 점수
-let highScore = 0; // 기존 최고 점수
 let isInitGame = false;
 
 /* 경로 준비 (배열에 저장) */
@@ -47,11 +47,13 @@ function generatePath() {
   }
   return path; // 준비된 경로 배열 반환
 }
+
 /* 준비된 배경과 경로 캔버스에 그리기 */
 export function drawMap(path) {
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 그리기
   drawPath(path); // 경로 그리기
 }
+
 /* 경로 그리기 (완벽히 이해하지 못함, 다만 지금 직선 경로에선 이 정도 로직은 불필요) */
 function drawPath() {
   const segmentLength = 100; // 몬스터 경로 세그먼트 길이
@@ -79,6 +81,7 @@ function drawPath() {
     }
   }
 }
+
 /* 경로 이미지 회전시키기 (지금은 직선 경로라 불필요하긴 함) */
 function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.save();
@@ -87,6 +90,7 @@ function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.drawImage(image, -width / 2, -height / 2, width, height);
   ctx.restore();
 }
+
 /* HQ 설치 */
 export function placeHQ() {
   // path의 마지막 지점 좌표 -> 랜덤 경로일 시 마지막 위치에 HQ 오도록 구현하신 듯
@@ -94,13 +98,14 @@ export function placeHQ() {
   HQ = new Base(lastPoint.x, lastPoint.y, initHp);
   HQ.draw(ctx, baseImage);
 }
+
 /* 타워 설치 */
 function placeNewTower(type, color) {
   // [1] 클릭된 격자의 기준 좌표 가져옴
   if (selectedSpot) {
     const { curX: x, curY: y } = selectedSpot;
-    // [2] 서버에 메세지 전송
-    sendEvent(41, {
+    // [2] 서버에 설치 관련 메세지 전송
+    sendTower(41, {
       type,
       color,
       positionX: x,
@@ -139,18 +144,19 @@ function placeNewTower(type, color) {
         userGold -= res.cost;
         // [6] 클릭 위치 초기화
         selectedSpot = null;
-
+        // [7] 설치된 타워가 J일 시 버프 적용
         if ((tower.id === 2001 || tower.id === 2004) && towers.length > 1) {
-          sendEvent(45, {
+          // [7-1] 서버에 버프 관련 메세지 보냄
+          sendTower(45, {
             towerId: tower.id,
             positionX: tower.x,
             positionY: tower.y,
           }).then((res) => {
+            // [7-2] J 근처에 버프받을 타워가 있다면 둘 연결
             let tempTarget = null;
-            //버프 대상 타워가 있으면 처리
             if (res.buffTarget) {
               towers.forEach((targetTower) => {
-                //대상 타워 버프 처리
+                // [7-2-1] 버프를 받고 있지 않은 근처 타워에 연결
                 if (!targetTower.isGetBuff) {
                   if (
                     targetTower.x === res.buffTarget.positionX &&
@@ -273,6 +279,10 @@ export async function gameLoop() {
     spawnMonster(wave.wave);
     monsterSpawnInterval = 200;
   }
+  if (selectedSpot) {
+    const { curX: x, curY: y } = selectedSpot;
+    ctx.drawImage(highlightImage, x, y, 100, 100);
+  }
   // [3] 타워 그리기와 몬스터 공격 판정 체크
   towers.forEach((tower, towerIndex) => {
     tower.draw(ctx);
@@ -290,7 +300,7 @@ export async function gameLoop() {
             tower.id !== 2001 &&
             tower.id !== 2004
           ) {
-            sendEvent(44, {
+            sendAttack(44, {
               towerType: tower.type,
               towerId: tower.id,
               towerPositionX: tower.x,
@@ -444,9 +454,12 @@ export let monsterTable = null;
 export let waveTable = null;
 export let sendEvent = null;
 export let sendMonster = null;
+export let sendTower = null;
+export let sendAttack = null;
 // [1] 이미지 로드 작업
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
+  new Promise((resolve) => (highlightImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
   ...blackPawnImages.map(
@@ -479,25 +492,10 @@ Promise.all([
     console.log("서버와 소켓 연결 성공");
   });
 
-  // 서버로 "event" 메세지 보내기
-  sendEvent = (handlerId, payload) => {
-    return new Promise((resolve, reject) => {
-      serverSocket.emit("event", {
-        clientVersion: "1.0.0",
-        userId,
-        handlerId,
-        payload,
-      });
-      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once("response", (data) => {
-        if (data.handlerId === handlerId) {
-          resolve(data);
-        } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
-        }
-      });
-    });
-  };
+  // 서버에서 "response" 메세지를 받았을 때
+  serverSocket.on("response", (data) => {
+    console.log("response : ", data);
+  });
 
   // [2-3 B] 소켓 연결 오류 응답
   serverSocket.on("connect_error", (err) => {
@@ -526,11 +524,6 @@ Promise.all([
     }
   });
 
-  // 서버에서 "eventResponse" 메세지를 받았을 때
-  serverSocket.on("eventResponse", (data) => {
-    console.log("eventResponse : ", data);
-  });
-
   // 서버로 "event" 메세지 보내기
   sendEvent = (handlerId, payload) => {
     return new Promise((resolve, reject) => {
@@ -543,6 +536,7 @@ Promise.all([
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
       serverSocket.once("eventResponse", (data) => {
         if (data.handlerId === handlerId) {
+          console.log("event : ", data);
           resolve(data);
         } else {
           reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
@@ -563,7 +557,49 @@ Promise.all([
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
       serverSocket.once("monsterResponse", (data) => {
         if (data.handlerId === handlerId) {
-          console.log("monsterResponse", data);
+          console.log("monster : ", data);
+          resolve(data);
+        } else {
+          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+        }
+      });
+    });
+  };
+
+  // 서버로 "tower" 메세지 보내기
+  sendTower = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("tower", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("towerResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          console.log("tower : ", data);
+          resolve(data);
+        } else {
+          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+        }
+      });
+    });
+  };
+
+  // 서버로 "attack" 메세지 보내기
+  sendAttack = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("attack", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("attackResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          console.log("attack : ", data);
           resolve(data);
         } else {
           reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
@@ -609,7 +645,7 @@ const towerInfoPanel = document.createElement("div");
 towerInfoPanel.id = "towerInfoPanel";
 towerInfoPanel.style.position = "absolute";
 towerInfoPanel.style.right = "10px";
-towerInfoPanel.style.top = "120px";
+towerInfoPanel.style.top = "150px";
 towerInfoPanel.style.padding = "10px";
 towerInfoPanel.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
 towerInfoPanel.style.color = "white";
@@ -650,7 +686,7 @@ function hideTowerInfo() {
 function sellTower(tower) {
   // [1] 서버에 메세지 보냄
   if (!tower.isGetBuff) {
-    sendEvent(42, {
+    sendTower(42, {
       type: tower.type,
       towerId: tower.id,
       positionX: tower.x,
@@ -708,7 +744,7 @@ function upgradeTower(tower) {
     return;
   }
   // [1] 서버에 메세지 보냄
-  sendEvent(43, {
+  sendTower(43, {
     type: tower.type,
     towerId: tower.id,
     positionX: tower.x,
@@ -781,6 +817,7 @@ canvas.addEventListener("click", (event) => {
       Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
     );
     if (distance < 30) {
+      selectedSpot = { curX, curY };
       selectedTower = tower;
       showTowerInfo(tower); // 선택된 타워 정보 표시
       return;
