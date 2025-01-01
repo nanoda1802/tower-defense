@@ -4,6 +4,8 @@ import {
   handleEvent,
   handleConnection,
   handleMonster,
+  handleTower,
+  handleAttack,
 } from "./helper.js";
 
 const registerHandler = (io) => {
@@ -18,6 +20,12 @@ const registerHandler = (io) => {
 
     //Monster
     socket.on("monster", (data) => handleMonster(io, socket, data));
+
+    //Tower
+    socket.on("tower", (data) => handleTower(io, socket, data));
+
+    //attack
+    socket.on("attack", (data) => handleAttack(io, socket, data));
 
     //Disconnect
     socket.on("disconnect", () => {

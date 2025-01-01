@@ -5,6 +5,8 @@ const NUM_OF_SPECIALS = 7;
 // [1] 배경
 const backgroundImage = new Image();
 backgroundImage.src = "images/background.png";
+const highlightImage = new Image();
+highlightImage.src = "images/highlight.png";
 // [2] 검정 병사
 const blackPawnImages = [];
 for (let i = 0; i < NUM_OF_PAWNS; i++) {
@@ -42,6 +44,7 @@ for (let i = 0; i < NUM_OF_MONSTERS; i++) {
 
 export {
   backgroundImage,
+  highlightImage,
   blackPawnImages,
   redPawnImages,
   specialImages,
