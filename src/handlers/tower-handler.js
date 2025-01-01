@@ -318,6 +318,7 @@ export const attackTowerHandler = (userId, payload) => {
       };
     }
     // [8] 몬스터 이동에 조작이 있진 않은 지 검증하기 위한 서버 시뮬레이션 데이터 가져오기
+    const tolerance = 200;
     const calculateX = calculateMonsterMove(
       monsterId,
       monsterIndex,
@@ -328,7 +329,7 @@ export const attackTowerHandler = (userId, payload) => {
       Math.pow(towerInfo.positionX - calculateX, 2) +
         Math.pow(towerInfo.positionY - monsterPositionY, 2),
     );
-    if (distance >= towerInfo.data.range) {
+    if (Math.abs(distance - towerInfo.data.range) > tolerance) {
       return { status: "fail", message: "공격 범위 밖의 대상입니다!!" };
     }
     // [10] 공격에 따른 몬스터 체력 감소 처리 (광역 공격 기획의 잔재가 남아있읍니다...)

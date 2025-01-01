@@ -24,8 +24,11 @@ const eventHandlerMappings = {
   102: handleGameStateUpdate,
 };
 
-const monsterHandlerMappings = {
+const spawnHandlerMappings = {
   31: createMonsterHandler, // 해써
+};
+
+const killHandlerMappings = {
   32: deathMonsterHandler, // 해써
 };
 
@@ -43,7 +46,8 @@ const attackHandlerMappings = {
 
 export {
   eventHandlerMappings,
-  monsterHandlerMappings,
+  spawnHandlerMappings,
+  killHandlerMappings,
   towerHandlerMappings,
   attackHandlerMappings,
 };
