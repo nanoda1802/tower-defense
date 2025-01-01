@@ -1,4 +1,4 @@
-import { gameStart, gameEnd, gameSave, gameLoad } from "./game-handler.js";
+import { gameStart, gameEnd } from "./game-handler.js";
 import { collideHandler } from "./headquarter-handler.js";
 import {
   createMonsterHandler,
@@ -18,8 +18,6 @@ import { handleRoomJoin, handleGameStateUpdate } from "./room-handler.js";
 const eventHandlerMappings = {
   11: gameStart, // 해써
   12: gameEnd, // 위치만 잡아 놓음
-  13: gameSave,
-  14: gameLoad,
   21: collideHandler,
   51: waveChangeHandler,
   101: handleRoomJoin,

@@ -110,13 +110,3 @@ export const gameEnd = (userId, payload) => {
     },
   };
 };
-
-/* Game Save 13 */
-export const gameSave = (userId, payload) => {
-  //게임저장
-  //현재 게임 상태를 저장하는 함수
-};
-/* Game Load 14 */
-export const gameLoad = (userId, payload) => {
-  //게임 불러오기
-};
