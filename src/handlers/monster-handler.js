@@ -1,60 +1,49 @@
-import { getGameAssets } from '../inits/assets.js';
-import {
-  setAliveMonsters,
-  getAliveMonsters,
-  removeAliveMonsters,
-  setDeathMonsters,
-} from '../models/monster-model.js';
-import { getGold, setGold } from '../models/gold-model.js';
-import { getScore, setScore } from '../models/score-model.js';
+import { getGameAssets } from "../inits/assets.js";
+import { rooms } from "../room/room.js";
 
-/* CreateMonsterHandler 31 */
+/* 몬스터 생성 핸들러 31 */
 export const createMonsterHandler = (userId, payload) => {
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] 필요한 assets 데이터 가져오기 및 payload 데이터 추출
     let isBoss = false;
-    const { monsters, waves } = getGameAssets(); //assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
-    const { timestamp, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
-    //timestamp는소환시간 검증(ex. 소환간격 검증), montserId는 몬스터 정보 검증, monsterIndex는 몬스터 총량이 일치하는지 검증
-    console.log('createMonsterHandler timestamp : ', timestamp);
-    // 몬스터 정보 조회
+    const { monsters, waves } = getGameAssets(); // assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
+    const { timestamp: createTime, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
+    // [3] 생성된 몬스터의 정보 조회
     const monster = monsters.data.find((monster) => monster.id === monsterId);
     if (!monster) {
-      return { status: 'fail', message: '존재하지 않는 몬스터 id입니다.' };
+      return { status: "fail", message: "존재하지 않는 몬스터 id입니다." };
     }
-
-    // 몬스터 출현 스테이지 검증
-    const monsterWave = waves.data.find((wave) => wave.id === waveId);
-    if (monsterWave.monster_id !== monsterId && monsterWave.boss_id !== monsterId) {
-      //waveId를 검증한 후 해당 monsterId와 payload의 monsterId 검증
+    // [4] 몬스터 출현 스테이지 검증
+    const spawnWave = waves.data.find((wave) => wave.id === waveId);
+    if (spawnWave.monster_id !== monsterId && spawnWave.boss_id !== monsterId) {
       return {
-        status: 'fail',
-        message: '해당 스테이지의 몬스터 id가 아닙니다.',
+        status: "fail",
+        message: "해당 스테이지의 몬스터 id가 아닙니다.",
       };
     }
-
-    //몬스터 개체수 검증
-    if (monsterWave.monster_cnt < monsterIndex) {
-      return { status: 'fail', message: '몬스터가 너무 많이 나왔습니다.' };
-    } //몬스터인덱스가 웨이브 숫자보다 높아지면 에러
-
-    //보스몬스터 출현 검증)
-    if (monsterIndex === monsterWave.monster_cnt) {
-      //몬스터 인덱스가 웨이브의 몬스터 숫자와 같을때
+    // [5] 몬스터 개체수 검증
+    if (spawnWave.monster_cnt < monsterIndex) {
+      return { status: "fail", message: "몬스터가 너무 많이 나왔습니다." };
+    }
+    // [6] 보스몬스터 출현 검증
+    if (monsterIndex === spawnWave.monster_cnt) {
       if (monsterId !== monster.id) {
-        return { status: 'fail', message: '보스몬스터가 잘못 나왔습니다.' };
+        return { status: "fail", message: "보스몬스터가 잘못 나왔습니다." };
       }
     }
-
-    // 몬스터 정보 저장
+    // [7] 몬스터 정보 저장
     const monsterType = monster.type;
     const monsterHealth = monster.health;
     const monsterAttack = monster.attack;
     const monsterSpeed = monster.speed;
     const monsterGold = monster.gold;
     const monsterScore = monster.score;
-    setAliveMonsters(
-      userId,
-      timestamp,
+    room.setAliveMonsters(
+      createTime,
       monsterId,
       monsterIndex,
       monsterHealth,
@@ -63,11 +52,12 @@ export const createMonsterHandler = (userId, payload) => {
       monsterGold,
       monsterScore,
     );
-    // 보스인지 쳌
+    // [8] 보스 여부 판별
     isBoss = monsterId > 200 ? true : false;
+    // [9] 생성 성공 응답
     return {
-      status: 'success',
-      message: '몬스터 생성 성공',
+      status: "success",
+      message: "몬스터 생성 성공",
       monsterId,
       monsterType,
       monsterHealth,
@@ -80,88 +70,90 @@ export const createMonsterHandler = (userId, payload) => {
       handlerId: 31,
     };
   } catch (error) {
-    throw new Error('몬스터 생성 실패 !! ' + error.message);
+    throw new Error("몬스터 생성 실패 !! " + error.message);
   }
 };
 
-/* deathMonsterHandler 32 */
+/* 몬스터 처치 핸들러 32 */
 export const deathMonsterHandler = (userId, payload) => {
   try {
-    const { monsters } = getGameAssets();
-    const aliveMonsters = getAliveMonsters(userId);
-    const { timestamp, monsterId, monsterIndex, monsterHealth, monsterGold, monsterScore } =
-      payload; //payloal 정보
-    //죽은 몬스터가 살아있는 몬스터 배열에 있느지 검증
-    const monster = aliveMonsters.find((monster) => {
-      return monster.monsterId === monsterId && monster.monsterIndex === monsterIndex;
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
     });
-    if (!monster) {
-      return { status: 'fail', message: '죽은 몬스터의 정보가 없습니다.' };
-    }
-
-    //죽은 몬스터가 정말 체력이 0이 되었는지 검증
-    if (monsterHealth > 0) {
-      return { status: 'fail', message: '몬스터가 아직 살아있었습니다.' };
-    }
-
-    //살아있는 몬스터 데이터 삭제
-    removeAliveMonsters(userId, monsterId, monsterIndex);
-
-    //죽은 몬스터 데이터 저장
-    setDeathMonsters(
-      userId,
-      timestamp,
+    // [2] payload에서 데이터 추출
+    const {
+      timestamp: deathTime,
       monsterId,
       monsterIndex,
       monsterHealth,
-      monsterGold,
-      monsterScore,
+      monsterGold: cliGold,
+      monsterScore: cliScore,
+    } = payload;
+    // [3] 몬스터 assets 데이터와 유저의 몬스터 데이터 가져오기
+    const { monsters } = getGameAssets();
+    const monsterAssetData = monsters.data.find(
+      (monster) => monster.id === monsterId,
     );
-
-    //골드 증가
-    //현재 보유 골드 조회
-    const usergold = getGold(userId);
-
-    //해당 몬스터의 골드량이 맞는지 검증
-    const rightGold = monsters.data.find((monster) => monster.id === monsterId).gold;
-    if (rightGold !== monsterGold) {
-      return { status: 'fail', message: 'Invalid monster gold' };
+    const aliveMonsters = room.getAliveMonsters();
+    // [4] 죽은 몬스터가 유효한 몬스터인지 검증
+    const monster = aliveMonsters.find(
+      (monster) =>
+        monster.monsterId === monsterId &&
+        monster.monsterIndex === monsterIndex,
+    );
+    if (!monster) {
+      return { status: "fail", message: "죽은 몬스터의 정보가 없습니다." };
     }
-    setGold(
-      userId,
-      usergold[usergold.length - 1].gold + monsterGold,
-      monsterGold,
-      'KILL',
-      timestamp,
-    );
-
-    //점수 증가
-    //현재 보유 점수 조회
-    const userscore = getScore(userId);
-
-    //해당 몬스터의 점수가 맞는지 검증
-    const rightScore = monsters.data.find((monster) => monster.id === monsterId).score;
-    if (rightScore !== monsterScore) {
-      return { status: 'fail', message: 'Invalid monster score' };
+    // [5] 죽은 몬스터가 정말 체력이 0이 되었는지 검증
+    if (monsterHealth > 0) {
+      return { status: "fail", message: "몬스터가 아직 살아있었습니다." };
     }
-
-    setScore(
-      userId,
-      userscore[userscore.length - 1].sumScore + monsterScore,
-      monsterScore,
-      timestamp,
-    );
-
-    return {
-      status: 'success',
-      message: '몬스터 죽음',
+    // [6] 해당 몬스터 생존 몬스터에서 배제
+    room.removeAliveMonsters(monsterId, monsterIndex);
+    // [7] 사망 몬스터에 추가
+    room.setDeathMonsters(
+      deathTime,
+      monsterId,
+      monsterIndex,
       monsterHealth,
-      monsterGold,
-      monsterScore,
+      cliGold,
+      cliScore,
+    );
+    // [8] 처치에 따른 골드 획득 처리
+    // [8-1] 현재 보유 골드 조회
+    const userGold = room.getGold();
+    // [8-2] assets 데이터의 획득량과 클라이언트 획득량 비교 검증
+    if (monsterAssetData.gold !== cliGold) {
+      return { status: "fail", message: "Invalid monster gold" };
+    }
+    // [8-3] 서버에 획득 골드 최신화
+    room.setGold(
+      userGold.at(-1).totalGold + cliGold,
+      cliGold,
+      "KILL",
+      deathTime,
+    );
+    // [9] 처치에 따른 점수 획득 처리
+    // [9-1] 현재 보유 점수 조회
+    const userScore = room.getScore();
+    // [9-2] assets 데이터의 획득량과 클라이언트 획득량 비교 검증
+    if (monsterAssetData.score !== cliScore) {
+      return { status: "fail", message: "Invalid monster score" };
+    }
+    // [9-3] 서버에 획득 점수 최신화
+    room.setScore(userScore.at(-1).totalScore + cliScore, cliScore, deathTime);
+    // [10] 처치 성공 응답
+    return {
+      status: "success",
+      message: "몬스터 처치!!",
+      monsterHealth,
+      monsterGold: cliGold, // 검증된 획득량이라 그대로 사용
+      monsterScore: cliScore,
       handlerId: 32,
     };
   } catch (error) {
-    throw new Error('몬스터 죽기 실패 !! ' + error.message);
+    throw new Error("몬스터 처치 실패!! " + error.message);
   }
 };
 

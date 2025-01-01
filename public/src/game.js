@@ -538,7 +538,11 @@ Promise.all([
           console.log('event : ', data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -559,7 +563,11 @@ Promise.all([
           console.log('monster : ', data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -580,7 +588,11 @@ Promise.all([
           console.log('tower : ', data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -598,10 +610,14 @@ Promise.all([
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
       serverSocket.once('attackResponse', (data) => {
         if (data.handlerId === handlerId) {
-          console.log('attack : ', data);
+          if (data.status === 'fail') console.log('attack : ', data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });

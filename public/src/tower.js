@@ -59,13 +59,6 @@ export class Tower {
   }
 
   buffStatus(buffValue, color, isBuff, buffTowerPos) {
-    console.log(
-      "color : ",
-      color,
-      "this.attackSpeed : ",
-      this.attackSpeed,
-      buffValue,
-    );
     if (color === "black") {
       // 공격
       if (isBuff) {
@@ -87,7 +80,6 @@ export class Tower {
     }
 
     this.buffTowerPos = buffTowerPos;
-    console.log("this.attackSpeed : ", this.attackSpeed);
   }
 
   updateAttackInterval() {

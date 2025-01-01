@@ -1,78 +1,45 @@
 import { getGameAssets } from '../inits/assets.js';
-import { setGold, clearGold, getGold } from '../models/gold-model.js';
-import { clearWave, setWave } from '../models/wave-model.js';
-import { setTower, clearTower, clearRemoveTower, getTower } from '../models/tower-model.js';
-import { clearScore, getScore, setScore } from '../models/score-model.js';
-import { clearHeadquarter, setHeadquarter, getHeadquarter } from '../models/headquarter.model.js';
-import { clearAliveMonsters, clearDeathMonsters } from '../models/monster-model.js';
+import { rooms } from '../room/room.js';
 import { TOWER_TYPE_PAWN } from '../constants.js';
-import redisClient from '../inits/redis.js'; // Redis 클라이언트 초기화
-import { prisma } from '../inits/prisma.js';
-
-// 사용자 ID를 기반으로 이메일을 가져오는 함수
-export const getUserEmail = async (userId) => {
-  try {
-    // Prisma를 사용하여 MySQL에서 사용자 이메일 조회
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true }, // 이메일만 선택
-    });
-
-    // 사용자가 없거나 이메일이 없는 경우 예외 처리
-    if (!user || !user.email) {
-      throw new Error(`사용자 ID(${userId})에 해당하는 이메일을 찾을 수 없습니다.`);
-    }
-
-    return user.email;
-  } catch (error) {
-    console.error('사용자 이메일 조회 실패:', error.message);
-    throw new Error('사용자 이메일을 가져오는 중 오류가 발생했습니다.');
-  }
-};
 
 /* Game Start 11 */
-//userId 사용자 고유의 아이디이다.
 export const gameStart = (userId, payload) => {
-  // [1] 웨이브 정보 초기화
-  clearWave(userId);
-  setWave(userId, 11, payload.timestamp);
-  // [2] 골드 정보 초기화
-  clearGold(userId);
-  setGold(userId, 100, 0, 'start', payload.timestamp);
-  const initGold = getGold(userId)[0].gold;
-  // [3] 타워 초기화 및 초기 타워 설치
-  clearTower(userId);
-  clearRemoveTower(userId);
+  // [1] 게임 시작 시간 추출
+  const startTime = payload.timestamp;
+  // [2] 서버에서 해당 유저의 room 가져오기
+  const room = rooms.find((room) => {
+    return room.userId === userId;
+  });
+  // [3] 최초 웨이브 설정
+  room.setWave(11, startTime);
+  // [4] 최초 점수 설정
+  room.setScore(0, 0, startTime);
+  // [5] 최초 골드 설정
+  const initGold = 100;
+  room.setGold(initGold, 0, 'start', startTime);
+  // [6] 초기 HQ 체력 설정
+  const initHp = 10;
+  room.setHq(initHp, startTime);
+  // [7] 초기 타워 설치
   const randomNum = Math.round(Math.random());
   const positionX = (Math.floor(Math.random() * 7) + 3) * 100;
   const positionY = randomNum === 0 ? 300 : 500;
   const towerType = TOWER_TYPE_PAWN;
   const towerData = getGameAssets().pawnTowers.data[randomNum];
-  setTower(
-    userId,
+  room.setTower(
     positionX,
     positionY,
     towerType,
-    payload.timestamp,
+    startTime,
     Object.assign({}, towerData),
     false,
     null,
     null,
   );
-  // [4] 스코어 초기화
-  clearScore(userId);
-  setScore(userId, 0, 0, payload.timestamp);
-  // [5] hQ 체력 초기화
-  clearHeadquarter(userId);
-  setHeadquarter(userId, 10, payload.timestamp);
-  const initHp = getHeadquarter(userId)[0].hp;
-  // [6] 몬스터 초기화
-  clearAliveMonsters(userId);
-  clearDeathMonsters(userId);
-  // [7] 성공 응답 반환
+  // [8] 성공 응답 반환
   return {
     status: 'success',
-    message: 'Game Started!!',
+    message: '게임 시작!!',
     gold: initGold,
     initHp,
     positionX,
@@ -100,30 +67,30 @@ export const gameEnd = async (userId, payload) => {
   ) {
     throw new Error('잘못된 payload 형식');
   }
-
-  const { timestamp: gameEndTime, score, leftGold, status } = payload;
-
-  // 서버에서 최신 점수와 골드 데이터를 가져오기
-  const scores = getScore(userId); // 서버에서 점수 데이터
-  const gold = getGold(userId); // 서버에서 골드 데이터
-
-  const serverScore = scores[scores.length - 1].sumScore || 0; // 최신 점수 가져오기
-  const serverGold = gold[gold.length - 1].gold || 0; // 최신 골드 가져오기
+  // [2] payload 정보 추출
+  const { timestamp: endTime, score: cliScore, leftGold, status } = payload;
+  // [3] 서버에서 최신 점수와 골드 데이터를 가져오기
+  let roomIndex = 0;
+  const room = rooms.find((room, idx) => {
+    roomIndex = idx; // 해당 room을 찾은 시점의 인덱스 기록
+    return room.userId === userId;
+  });
+  const serverScore = room.getScore().at(-1).totalScore || 0; // 최신 점수 가져오기
+  const serverGold = room.getGold().at(-1).totalGold || 0; // 최신 골드 가져오기
+  // [4] 클라이언트와 서버 점수 비교
   const tolerance = 50;
-  // 클라이언트와 서버 점수 비교
-  if (Math.abs(serverScore - score) > tolerance) {
+  if (Math.abs(serverScore - cliScore) > tolerance) {
     throw new Error(
-      `점수 불일치: 클라이언트 점수(${score})와 서버 점수(${serverScore})가 다릅니다. 차이: ${score - serverScore}`,
+      `점수 불일치: 클라이언트 점수(${cliScore})와 서버 점수(${serverScore})가 다릅니다. 차이: ${cliScore - serverScore}`,
     );
   }
-
-  // 클라이언트와 서버 골드 비교
+  // [5] 클라이언트와 서버 골드 비교
   if (Math.abs(serverGold - leftGold) > tolerance) {
     throw new Error(
       `골드 불일치: 클라이언트 골드(${leftGold})와 서버 골드(${serverGold})가 다릅니다. 차이: ${serverGold - leftGold}`,
     );
   }
-
+  // [6] 최종 점수 계산 및 응답 메세지 준비
   let finalScore = serverScore;
   let message = '';
   if (status === 'clear') {
@@ -133,6 +100,10 @@ export const gameEnd = async (userId, payload) => {
     finalScore; // 게임 오버 시 골드를 더하지 않음
     message = `게임오버로 최종 점수 ${finalScore}점 입니다!`;
   }
+
+  // [7] 종료된 room 제거
+  rooms.splice(roomIndex, 1);
+
   try {
     // Redis에 사용자 이메일과 최종 점수 저장
     const email = await getUserEmail(userId);

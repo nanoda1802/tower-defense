@@ -1,4 +1,5 @@
 import { getGameAssets } from "../inits/assets.js";
+import { rooms } from "../room/room.js";
 import {
   PAWN_TOWER_COST,
   SPECIAL_TOWER_COST,
@@ -9,27 +10,25 @@ import {
   TOWER_COLOR_BLACK,
   TOWER_COLOR_RED,
 } from "../constants.js";
-import {
-  getTower,
-  setTower,
-  removeTower,
-  upgradeTower,
-} from "../models/tower-model.js";
-import { getGold, setGold } from "../models/gold-model.js";
-import { getAliveMonsters } from "../models/monster-model.js";
 import { calculateMonsterMove } from "../utils/calculateMonsterMove.js";
 
+/* 필요 변수 생성 */
 const TOWER_TYPE_BUFF = "buffer";
-const BUFF_ATTACK_VALUE = 50;
+const BUFF_ATTACK_VALUE = 20;
 const BUFF_ATTACK_SPEED_VALUE = 0.5;
 
+/* 타워 설치 핸들러 */
 export const getTowerHandler = (userId, payload) => {
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] 필요한 assets 데이터 가져오기 및 payload 데이터 추출
     const { pawnTowers, specialTowers } = getGameAssets();
     const { type, color, positionX, positionY, timestamp } = payload;
-
-    // 2. position(x,y) 위치에 towerId가 존재하는지
-    const userTowers = getTower(userId);
+    // [3] 선택된 위치에 이미 설치된 타워가 있는지 검증
+    const userTowers = room.getTowers();
     if (
       userTowers.some(
         (tower) =>
@@ -38,67 +37,58 @@ export const getTowerHandler = (userId, payload) => {
     ) {
       return {
         status: "fail",
-        message: "There is already a tower at that location",
+        message: "이미 타워가 설치된 위치임다!!",
       };
     }
-
-    // 3. 보유 골드 확인
+    // [4] 유저가 보유한 골드로 설치 비용을 지불할 수 있는지 검증
+    // [4-1] 보유 골드 및 필요 비용 확인
+    const userGold = room.getGold();
     const cost =
       type === TOWER_TYPE_PAWN ? PAWN_TOWER_COST : SPECIAL_TOWER_COST;
-    const userGold = getGold(userId);
-
+    // [4-2] 보유 골드과 확인되지 않으면 거부
     if (!userGold) {
-      return { status: "fail", message: "No gold data for user" };
+      return { status: "fail", message: "골드 진행 사항이 없는 유저임다!!" };
     }
-
-    if (userGold[userGold.length - 1].gold < cost) {
-      return { status: "fail", message: "Not enough money" };
+    // [4-3] 지불 능력이 안 되면 거부
+    if (userGold.at(-1).totalGold < cost) {
+      return { status: "fail", message: "골드가 모자랍니다!!" };
     }
-    // 5. 골드 처리
-    const resGold = userGold[userGold.length - 1].gold - cost;
-    setGold(userId, resGold, -cost, "PURCHASE", timestamp);
-    // console.log(getGold(userId));
-
-    /** 6. 타워 생성
-     * 기본타워 : 기본 카드는 '1' 색상은 입력 값
-     * 특수타워 : 랜덤 획득
-     *  - J(빨) : 16.5% , J(검) :16.5% , Q(빨) : 16.5% , J(검) :16.5% , K(빨) : 16.5% , J(검) :16.5% [99%]
-     *  - JOKER : 1%                                                                                [ 1%]
-     */
+    // [5] 설치 비용 지불 후 보유 골드 최신화
+    const resGold = userGold.at(-1).totalGold - cost;
+    room.setGold(resGold, -cost, "PURCHASE", timestamp);
+    // [6] 타워 설치 준비
+    // pawn : card 속성 기본 값은 "1", color는 요청받은 값 "red" 또는 "black"
+    // special : card 속성은 "J", "Q", "K", "Joker", 랜덤 획득 (조커 1%, 그 외 균등 확률)
     let towerInfo = null;
+    // [6-1 A] pawn 타워 검증 및 정보 찾기
     if (type === TOWER_TYPE_PAWN) {
-      /*일반 타워*/
-
-      // Color 체크
+      // 유효한 color를 요청받은 건지 검증
       if (color !== "red" && color !== "black") {
-        return { status: "fail", message: "Invalid color" };
+        return { status: "fail", message: "그런 색의 카드는 없어요!!" };
       }
-
+      // assets 데이터에서 해당 타워의 정보 가져옴
       towerInfo = pawnTowers.data.find((tower) => tower.color === color);
-      towerInfo.card = "1";
     } else {
-      /*특수 타워*/
-
+      // [6-1 B] special 타워 랜덤 선택
       const probability = Math.floor(Math.random() * 1001) / 10;
       if (probability >= 0 && probability <= 16.5) {
-        towerInfo = specialTowers.data[0]; //J-red
+        towerInfo = specialTowers.data[0]; // J-red
       } else if (probability > 16.5 && probability <= 33) {
-        towerInfo = specialTowers.data[1]; //Q-red
+        towerInfo = specialTowers.data[1]; // Q-red
       } else if (probability > 33 && probability <= 49.5) {
-        towerInfo = specialTowers.data[2]; //K-red
+        towerInfo = specialTowers.data[2]; // K-red
       } else if (probability > 49.5 && probability <= 66) {
-        towerInfo = specialTowers.data[3]; //J-black
+        towerInfo = specialTowers.data[3]; // J-black
       } else if (probability > 66 && probability <= 82.5) {
-        towerInfo = specialTowers.data[4]; //Q-black
+        towerInfo = specialTowers.data[4]; // Q-black
       } else if (probability > 82.5 && probability <= 99) {
-        towerInfo = specialTowers.data[5]; //K-black
+        towerInfo = specialTowers.data[5]; // K-black
       } else if (probability > 99 && probability < 100) {
-        towerInfo = specialTowers.data[6]; //Joker
+        towerInfo = specialTowers.data[6]; // Joker
       }
     }
-
-    setTower(
-      userId,
+    // [7] 설치될 타워 서버에 저장
+    room.setTower(
       positionX,
       positionY,
       type,
@@ -108,8 +98,7 @@ export const getTowerHandler = (userId, payload) => {
       null,
       null,
     );
-    // console.log(getTower(userId));
-
+    // [8] 설치 성공 응답
     return {
       status: "success",
       cost,
@@ -127,14 +116,17 @@ export const getTowerHandler = (userId, payload) => {
 /* 타워 판매 42 */
 export const sellTowerHandler = (userId, payload) => {
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] payload에서 필요 데이터 추출
     const { type, towerId, positionX, positionY, timestamp } = payload;
-
-    // 1. 기준정보 (towerId)
+    // [3] assets 데이터에 존재하는 타워인지 검증
     const res = checkTowerAsset(type, towerId);
     if (res) return { status: "fail", message: res };
-
-    // 2. position(x,y) 위치에 towerId가 존재하는지
-    const userTowers = getTower(userId);
+    // [4] 선택된 위치에 타워를 보유하고 있는지 검증
+    const userTowers = room.getTowers();
     const towerInfo = userTowers.find(
       (tower) =>
         tower.data.id === towerId &&
@@ -142,18 +134,14 @@ export const sellTowerHandler = (userId, payload) => {
         tower.positionY === positionY,
     );
     if (!towerInfo) {
-      return { status: "fail", message: "There is not a tower" };
+      return { status: "fail", message: "판매할 타워가 없는 위치임다!!" };
     }
-
-    /*** (추가) 버프타워용
-     *  CASE1. 버프 타워가 아닌 경우 (버프 적용된 일반 타워만)
-     *  - towerInfo 객체에서 buffTowerPos 값의 버프 타워를 찾아 buffTowerArr 목록에서 자기 자신을 지워줘야함
-     *  CASE2. 버프 타워인 경우
-     *  - towerInfo 객체의 buffTowerArr 목록의 타워들을 버프 전 상태로 원복 시켜야함.
-     */
+    // [추가] 버프 주체 및 버프 대상 타워 판매 처리
     let buffValue = 0;
     let buffTowerPos = "";
+    // [추가 A] 버프 타워가 아닌 경우 (판매할 타워가 J가 아닌 경우)
     if (TOWER_TYPE_BUFF !== towerInfo.data.type) {
+      // [A-1] 그 타워가 J에게 버프를 받고 있다면
       if (towerInfo.isGetBuff) {
         const buffTowerPos = towerInfo.buffTowerPos.split(",");
         const buffTower = userTowers.find(
@@ -161,55 +149,43 @@ export const sellTowerHandler = (userId, payload) => {
             tower.positionX === Number(buffTowerPos[0]) &&
             tower.positionY === Number(buffTowerPos[1]),
         );
+        // [A-2] J의 버프 대상을 초기화
         buffTower.buffTarget = null;
       }
     } else {
+      // [추가 B] 버프 타워인 경우 (판매할 타워가 J인 경우)
+      // [B-1] 버프를 주고 있는 현황 초기화
       changeBuffStatus(towerInfo.buffTarget, false, null, towerInfo.data.color);
+      // [B-2] 클라이언트에서 동일한 처리 위한 버프 수치 할당
       buffValue =
         towerInfo.data.color === TOWER_COLOR_BLACK
           ? BUFF_ATTACK_VALUE
           : BUFF_ATTACK_SPEED_VALUE;
-      // buffValue = towerInfo.data.color === TOWER_COLOR_BLACK ? BUFF_ATTACK_VALUE : BUFF_ATTACK_SPEED_VALUE,
     }
-
-    /** 3. 판매처리 (골드)
-     *  일반 : 뽑기 금액 / 2 * 카드숫자
-     *  특수 : 뽑기 금액 / 2
-     */
-    const userGold = getGold(userId);
+    // [5] 판매에 대한 골득 획득 처리
+    // pawn : 설치 비용의 절반에 승급 수치를 곱한 값 (6강 pawn 판매 시 10/2*6)
+    // special : 설치 비용의 절반 값
+    // [5-1] 유저 보유 골드 현황 조회 및 검증
+    const userGold = room.getGold();
     if (!userGold) {
-      return { status: "fail", message: "No gold data for user" };
+      return { status: "fail", message: "골드 진행 사항이 없는 유저임다!!" };
     }
+    // [5-2] 판매 시 획득할 골드 확인
     const price =
       towerInfo.type === TOWER_TYPE_PAWN
         ? (PAWN_TOWER_COST / 2) * Number(towerInfo.data.card)
         : SPECIAL_TOWER_COST / 2;
-    setGold(
-      userId,
-      userGold[userGold.length - 1].gold + price,
-      price,
-      "SELL",
-      timestamp,
-    );
-    // console.log(getGold(userId));
-
-    // 4. 판매처리 (타워)
-    removeTower(userId, towerId, positionX, positionY);
-    // console.log(getTower(userId));
-    // console.log(getRemoveTower(userId));
-
+    // [5-3] 골드 획득에 따른 보유 골드 최신화
+    room.setGold(userGold.at(-1).totalGold + price, price, "SELL", timestamp);
+    // [6] 판매된 타워 활성 타워 목록에서 제거
+    room.removeTower(towerId, positionX, positionY);
+    // [7] 판매 성공 응답
     return {
       status: "success",
-      gold: userGold[userGold.length - 1].gold,
+      gold: userGold.at(-1).totalGold,
       price,
       buffValue,
     };
-    // return {
-    //   status: 'success',
-    //   gold: userGold[userGold.length - 1].gold,
-    //   price,
-    //   towers: getTower(userId),
-    // };
   } catch (error) {
     throw new Error("Failed to sellTowerHandler !! " + error.message);
   }
@@ -218,19 +194,21 @@ export const sellTowerHandler = (userId, payload) => {
 /* 타워 승급 43 */
 export const upgradeTowerHandler = (userId, payload) => {
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] payload에서 필요 데이터 추출
     const { type, towerId, positionX, positionY, timestamp } = payload;
-
-    // 특수 타워 업글 방지
+    // [3] 특수 타워는 승급 불가 처리
     if (type === TOWER_TYPE_SPECIAL) {
-      return { status: "fail", message: "Special tower can not upgrade" };
+      return { status: "fail", message: "특수 타워는 승급시킬 수 없습니다!!" };
     }
-
-    // 1. 기준정보 (towerId)
+    // [3] assets 데이터에 존재하는 타워인지 검증
     const res = checkTowerAsset(type, towerId);
     if (res) return { status: "fail", message: res };
-
-    // 2. position(x,y) 위치에 towerId가 존재하는지
-    const userTowers = getTower(userId);
+    // [4] 선택된 위치에 타워를 보유하고 있는지 검증
+    const userTowers = room.getTowers();
     const towerInfo = userTowers.find(
       (tower) =>
         tower.data.id === towerId &&
@@ -238,41 +216,28 @@ export const upgradeTowerHandler = (userId, payload) => {
         tower.positionY === positionY,
     );
     if (!towerInfo) {
-      return { status: "fail", message: "There is not a tower" };
+      return { status: "fail", message: "승급할 타워가 없는 위치임다!!" };
     }
-
-    /** 3. 골드 처리
-     *  일반 : 카드 숫자 * 2
-     *  특수 : 카드 숫자 * 2 (일단 제외)
-     */
-    const userGold = getGold(userId);
+    // [5] 승급 비용에 대한 골드 처리 (pawn 타워만 가능, 비용은 card 속성 값의 두 배)
+    // [5-1] 유저의 보유 골드 조회
+    const userGold = room.getGold();
     if (!userGold) {
-      return { status: "fail", message: "No gold data for user" };
+      return { status: "fail", message: "골드 진행 사항이 없는 유저임다!!" };
     }
-
-    // 나중에 특수 카드도 강화 하게 되면 아래 사용
-    // const x = 2;
-    // const cost = towerInfo.data.card === 'J' ? 11 * x : towerInfo.data.card === 'Q' ? 12 * x  : towerInfo.data.card === 'K' ? 13 * x : Number(towerInfo.data.card) * x;
+    // [5-2] 승급 비용 계산
     const cost = Number(towerInfo.data.card) * 2;
-    // 보유 골드 체크
-    if (userGold[userGold.length - 1].gold < cost) {
-      return { status: "fail", message: "Not enough money" };
+    // [5-3] 보유량으로 비용 지불 불가할 시 거부
+    if (userGold.at(-1).totalGold < cost) {
+      return { status: "fail", message: "골드가 모자릅니다!!" };
     }
-
-    setGold(
-      userId,
-      userGold[userGold.length - 1].gold - cost,
-      cost,
-      "UPGRADE",
-      timestamp,
-    );
-    // console.log(getGold(userId));
-
-    // 4. 타워 업글 처리
-    upgradeTower(userId, towerId, positionX, positionY);
+    // [6] 비용 지불 후 보유 골드 최신화
+    room.setGold(userGold.at(-1).totalGold - cost, cost, "UPGRADE", timestamp);
+    // [7] 승급 대상 타워 능력치 증가
+    room.upgradeTower(towerId, positionX, positionY);
+    // [8] 승급 성공 응답
     return {
       status: "success",
-      gold: userGold[userGold.length - 1].gold,
+      gold: userGold.at(-1).totalGold,
       cost,
       positionX: towerInfo.positionX,
       positionY: towerInfo.positionY,
@@ -286,8 +251,12 @@ export const upgradeTowerHandler = (userId, payload) => {
 
 /* 공격 타워 (공격) 44 */
 export const attackTowerHandler = (userId, payload) => {
-  // const { pawnTowers, specialTowers, monsters, bosses } = getGameAssets();
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] payload에서 필요 데이터 추출
     const {
       towerType,
       towerId,
@@ -300,58 +269,44 @@ export const attackTowerHandler = (userId, payload) => {
       timestamp,
       monsterIndex,
     } = payload;
-
-    // 0. 타워 및 몬스터 Type 유효성 검사
+    // [3] 유효한 타워 타입인지, 유효한 몬스터 타입인지 검증
     if (towerType !== TOWER_TYPE_PAWN && towerType !== TOWER_TYPE_SPECIAL) {
-      return { status: "fail", message: "Invalid tower type" };
+      return { status: "fail", message: "타워의 타입이 유효하지 않슴다!!" };
     }
-
     if (monsterType !== MONSTER_TYPE && monsterType !== BOSS_TYPE) {
-      return { status: "fail", message: "Invalid monster type" };
+      return { status: "fail", message: "몬스터의 타입이 유효하지 않슴다!!" };
     }
-
-    /** 1. 기준정보 체크
-     *  타워, 몬스터 (일반,보스)
-     */
-
-    // 타워
+    // [4] 공격하는 타워와 공격받는 몬스터가 assets 데이터에 존재하는지 검증
     const towerRes = checkTowerAsset(towerType, towerId);
     if (towerRes) return { status: "fail", message: towerRes };
-
-    // 몬스터
-    const mosterRes = checkMosterAsset(monsterType, monsterId);
-    if (mosterRes) return { status: "fail", message: mosterRes };
-
-    // 2. 설치한 타워가 맞는지 검증 (위치 포함)
-    const userTowers = getTower(userId);
+    const monsterRes = checkMonsterAsset(monsterType, monsterId);
+    if (monsterRes) return { status: "fail", message: monsterRes };
+    // [5] 유저가 보유한 타워가 맞는지 검증
+    const userTowers = room.getTowers();
     const towerInfo = userTowers.find(
       (tower) =>
         tower.data.id === towerId &&
         tower.positionX === towerPositionX &&
         tower.positionY === towerPositionY,
     );
-
     if (!towerInfo) {
-      return { status: "fail", message: "There is not a tower" };
+      return { status: "fail", message: "보유한 타워가 아니랍니다!!" };
     }
-
-    // J,Q 타워 체크 (J,Q 는 전용 핸들러가 따로 있음)
+    // [6] 버프 타워가 공격하려 하진 않는지 검증
     if (towerInfo.data.card === "J") {
       return {
         status: "fail",
-        message: `'${towerInfo.data.card}' tower cannot be processed by this handler`,
+        message: `'${towerInfo.data.card}' 타워에 맞는 핸들러가 아님다!!`,
       };
     }
-
-    // 3. 해당 몬스터가 존재하는 몬스터가 맞는지 체크
-    const aliveTargets = getAliveMonsters(userId);
+    // [7] 살아있는 몬스터를 공격하는 게 맞는지 검증
+    const aliveTargets = room.getAliveMonsters();
     if (aliveTargets.length === 0) {
       return {
         status: "fail",
-        message: "There is no generated monster information",
+        message: "공격할 생존 몬스터가 존재하지 않슴다!!",
       };
     }
-    // const targetInfo = aliveTargets.find((target) => target.monsterId === monsterId && target.positionX === monsterPositionX && target.positionY === monsterPositionY)
     const targetInfo = aliveTargets.find(
       (target) =>
         target.monsterId === monsterId && target.monsterIndex === monsterIndex,
@@ -359,56 +314,36 @@ export const attackTowerHandler = (userId, payload) => {
     if (!targetInfo) {
       return {
         status: "fail",
-        message: `The ${monsterType === MONSTER_TYPE ? "moster" : "boss"} cannot be found `,
+        message: `공격할 ${monsterType === MONSTER_TYPE ? "monster" : "boss"} 대상을 찾을 수 없슴다!! `,
       };
     }
-
-    //
+    // [8] 몬스터 이동에 조작이 있진 않은 지 검증하기 위한 서버 시뮬레이션 데이터 가져오기
     const calculateX = calculateMonsterMove(
       monsterId,
       monsterIndex,
-      targetInfo.timestamp,
+      targetInfo.timestamp, // 타겟 몬스터 스폰 시간
     );
-
-    //  4. 공격 사거리 체크
+    // [9] 타워의 공격 범위 인식이 유효했는지 검증
     const distance = Math.sqrt(
       Math.pow(towerInfo.positionX - calculateX, 2) +
         Math.pow(towerInfo.positionY - monsterPositionY, 2),
     );
     if (distance >= towerInfo.data.range) {
-      return { status: "fail", message: "This is not a valid attack" };
+      return { status: "fail", message: "공격 범위 밖의 대상입니다!!" };
     }
-
-    /*** 5. 공격 처리
-     * 5-1. 체력 감소
-     * 5-2. (조건) 몬스터 체력이 0이면 사망처리 / 골드 획득 처리
-     *
-     * 타워 공격 유형
-     * [색상(일반,특수 - 공통)]
-     * 검정 : 단일 공격
-     * 빨강 : 범위 공격
-     *
-     * [성능]
-     * - 일반 타워: 특수 효과X
-     * - J 타워: 본인 사거리 안에 아군 타워 버프 (다른 핸들러에서 처리)
-     * - Q 타워: 공격력 만큼 몬스터 이동속도 감소 (다른 핸들러에서 처리)
-     * - K 타워: 공격력 사거리 우월
-     * - JOKER 타워: 공격력, 공격속도, 사거리, 공격범위 우월
-     */
-    // 일반 타워 특수 타워
+    // [10] 공격에 따른 몬스터 체력 감소 처리 (광역 공격 기획의 잔재가 남아있읍니다...)
     const monsterArr = [];
+    // [10-1] 검정 카드는 단일 공격
     if (towerInfo.data.color === TOWER_COLOR_BLACK) {
-      //단일 공격
       attackDamage(userId, monsterType, towerInfo, targetInfo, timestamp);
       monsterArr.push(targetInfo);
     } else if (
       towerInfo.data.color === TOWER_COLOR_RED ||
       towerInfo.data.card === "joker"
     ) {
-      // 몬스터 생존 정보 조회
-      const alliveMonsters = getAliveMonsters(userId);
-
-      alliveMonsters.forEach((monster) => {
+      // [10-2] 빨강 카드 및 조커는 광역 공격
+      const aliveMonsters = room.getAliveMonsters();
+      aliveMonsters.forEach((monster) => {
         checkSplashAttack(
           userId,
           monster,
@@ -422,7 +357,7 @@ export const attackTowerHandler = (userId, payload) => {
         );
       });
     }
-
+    // [11] 공격 성공 응답
     return {
       status: "success",
       monsters: monsterArr,
@@ -435,18 +370,18 @@ export const attackTowerHandler = (userId, payload) => {
 /* 버프 타워 (공격) 45 */
 export const buffTowerHandler = (userId, payload) => {
   try {
+    // [1] 서버에서 해당 유저의 room 가져오기
+    const room = rooms.find((room) => {
+      return room.userId === userId;
+    });
+    // [2] payload에서 필요 데이터 추출
     const { towerId, positionX, positionY } = payload;
-
-    /** 1. 기준정보 체크
-     *  타워, 몬스터 (일반,보스)
-     */
-
-    // 타워
+    // [3] 버프 타워가 assets 데이터에 존재하는지 검증
     const towerRes = checkTowerAsset(TOWER_TYPE_SPECIAL, towerId);
     if (towerRes) return { status: "fail", message: towerRes };
 
-    // 2. 위치 + 타워Id + 버프타워 여부 체크
-    const userTowers = getTower(userId);
+    // [4] 유저가 이 타워를 보유했는지, 버프를 줄 다른 타워가 있는지 검증
+    const userTowers = room.getTowers();
     const towerInfo = userTowers.find(
       (tower) =>
         tower.data.id === towerId &&
@@ -455,33 +390,30 @@ export const buffTowerHandler = (userId, payload) => {
         tower.data.type === "buffer",
     );
     if (!towerInfo) {
-      return { status: "fail", message: "There is not a tower" };
+      return { status: "fail", message: "버프 타워를 가지고 있지 않슴다!!" };
     }
-
-    // 3. 생성된 타워가 오직 자기 자신뿐이면 return
     if (userTowers.length === 1) {
       return {
         status: "success",
-        message: "There are no target towers to buff",
+        message: "버프를 받을 다른 타워가 없슴다!!",
       };
     }
-
-    // 4. 버프 처리
+    // [5] 버프에 따른 능력치 상승 적용
     for (let i = 0; i < userTowers.length; i++) {
-      // 대상 조건 : 자기 자신이 아닌 타워여야 하고 버프효과를 안받고 있는 타워
+      // [5-1] 버프 타워 본인 제외, 미버프 상태인 타워 물색
       if (
         (positionX !== userTowers[i].positionX ||
           positionY !== userTowers[i].positionY) &&
         !userTowers[i].isGetBuff &&
         userTowers[i].data.type !== "buffer"
       ) {
+        // [5-2] 버프 타워의 사거리 내에 있는 타워에 적용
         const distance = getDistance(
           positionX,
           positionY,
           userTowers[i].positionX,
           userTowers[i].positionY,
         );
-        // 버프 타워 기준으로 유효한 거리인 타워에게만 버프 효과 부여
         if (distance < towerInfo.data.range) {
           changeBuffStatus(
             userTowers[i],
@@ -489,14 +421,13 @@ export const buffTowerHandler = (userId, payload) => {
             positionX + "," + positionY,
             towerInfo.data.color,
           );
-          // towerInfo.buffTowerArr.push(userTowers[i]); //버프 타워의 대상 목록에 추가
+          // [5-3] 버프 줄 대상 타워 버프 목록에 추가
           towerInfo.buffTarget = userTowers[i];
           break;
         }
       }
     }
-
-    // 버프 받은 타워 목록 return
+    // [6] 버프 성공 응답
     return {
       status: "success",
       buffTarget: towerInfo.buffTarget,
@@ -540,7 +471,7 @@ const checkTowerAsset = (type, towerId) => {
 };
 
 /** 몬스터 Asset 정보 체크 */
-const checkMosterAsset = (type, monsterId) => {
+const checkMonsterAsset = (type, monsterId) => {
   const { monsters } = getGameAssets();
 
   // 타워 유형에 대한 검증
