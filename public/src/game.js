@@ -1,31 +1,40 @@
-import { Base } from './base.js';
-import { Monster } from './monster.js';
-import { Tower } from './tower.js';
-import { Wave } from './wave.js';
-import { backgroundImage, blackPawnImages, redPawnImages, specialImages, baseImage, pathImage, monsterImages } from '../elements/images.js';
+import { Base } from "./base.js";
+import { Monster } from "./monster.js";
+import { Tower } from "./tower.js";
+import { Wave } from "./wave.js";
+import {
+  backgroundImage,
+  highlightImage,
+  blackPawnImages,
+  redPawnImages,
+  specialImages,
+  baseImage,
+  pathImage,
+  monsterImages,
+} from "../elements/images.js";
 
-/* 
-  어딘가에 엑세스 토큰이 저장이 안되어 있다면 로그인을 유도하는 코드를 여기에 추가해주세요!
-*/
-
-export let serverSocket; // 서버 웹소켓 객체
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-let userGold = 0; // 유저 골드
-let HQ; // 기지 객체
-let initHp = 0; // 기지 체력
-let wave = 0;
-
-let monsterSpawnInterval = 200; // 몬스터 생성 주기
-let monsters = [];
+/* 변수 선언부 */
+// [1] 소켓 객체 생성
+export let serverSocket;
+// [2] 캔버스 준비
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+// [3] 플레이어 관련 변수
+let userGold = 0;
+let HQ;
+let initHp = 0;
+let score = 0;
 let towers = [];
+// [4] 몬스터 관련 변수
+let monsterSpawnInterval = 200;
+let monsters = [];
 let monsterPath;
+// [5] 게임 관련 변수
+let highScore = 0;
+let wave = 0;
 let isDestroyed = false;
-
-let score = 0; // 게임 점수
-let highScore = 0; // 기존 최고 점수
 let isInitGame = false;
+let isGameEnded = false; // 게임 종료 여부 플래그
 
 /* 경로 준비 (배열에 저장) */
 function generatePath() {
@@ -39,11 +48,13 @@ function generatePath() {
   }
   return path; // 준비된 경로 배열 반환
 }
+
 /* 준비된 배경과 경로 캔버스에 그리기 */
 export function drawMap(path) {
   ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // 배경 그리기
   drawPath(path); // 경로 그리기
 }
+
 /* 경로 그리기 (완벽히 이해하지 못함, 다만 지금 직선 경로에선 이 정도 로직은 불필요) */
 function drawPath() {
   const segmentLength = 100; // 몬스터 경로 세그먼트 길이
@@ -71,6 +82,7 @@ function drawPath() {
     }
   }
 }
+
 /* 경로 이미지 회전시키기 (지금은 직선 경로라 불필요하긴 함) */
 function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.save();
@@ -79,6 +91,7 @@ function drawRotatedImage(image, x, y, width, height, angle) {
   ctx.drawImage(image, -width / 2, -height / 2, width, height);
   ctx.restore();
 }
+
 /* HQ 설치 */
 export function placeHQ() {
   // path의 마지막 지점 좌표 -> 랜덤 경로일 시 마지막 위치에 HQ 오도록 구현하신 듯
@@ -86,13 +99,14 @@ export function placeHQ() {
   HQ = new Base(lastPoint.x, lastPoint.y, initHp);
   HQ.draw(ctx, baseImage);
 }
+
 /* 타워 설치 */
 function placeNewTower(type, color) {
   // [1] 클릭된 격자의 기준 좌표 가져옴
   if (selectedSpot) {
     const { curX: x, curY: y } = selectedSpot;
-    // [2] 서버에 메세지 전송
-    sendEvent(41, {
+    // [2] 서버에 설치 관련 메세지 전송
+    sendTower(41, {
       type,
       color,
       positionX: x,
@@ -100,40 +114,61 @@ function placeNewTower(type, color) {
       timestamp: Date.now(),
     }).then((res) => {
       // [3] 검증 성공 시 클라에 적용
-      if (res.status === 'success') {
+      if (res.status === "success") {
         const { positionX: x, positionY: y, type, data } = res;
         const towerNum = data.id;
         // [4] 응답 받은 타워 정보 적용해 설치
         let towerImage;
-        if (type === 'pawn' && color === 'black') {
+        if (type === "pawn" && color === "black") {
           towerImage = blackPawnImages[0];
-        } else if (type === 'pawn' && color === 'red') {
+        } else if (type === "pawn" && color === "red") {
           towerImage = redPawnImages[0];
         } else {
           towerImage = specialImages[towerNum - 2001];
         }
-        const tower = new Tower(x, y, towerImage, towerNum, type, data.attack, data.attack_speed, data.range, null, false, null);
+        const tower = new Tower(
+          x,
+          y,
+          towerImage,
+          towerNum,
+          type,
+          data.attack,
+          data.attack_speed,
+          data.range,
+          null,
+          false,
+          null,
+        );
         towers.push(tower);
         tower.draw(ctx);
         // [5] 타워 비용만큼 골드 차감
         userGold -= res.cost;
         // [6] 클릭 위치 초기화
         selectedSpot = null;
-
+        // [7] 설치된 타워가 J일 시 버프 적용
         if ((tower.id === 2001 || tower.id === 2004) && towers.length > 1) {
-          sendEvent(45, {
+          // [7-1] 서버에 버프 관련 메세지 보냄
+          sendTower(45, {
             towerId: tower.id,
             positionX: tower.x,
             positionY: tower.y,
           }).then((res) => {
+            // [7-2] J 근처에 버프받을 타워가 있다면 둘 연결
             let tempTarget = null;
-            //버프 대상 타워가 있으면 처리
             if (res.buffTarget) {
               towers.forEach((targetTower) => {
-                //대상 타워 버프 처리
+                // [7-2-1] 버프를 받고 있지 않은 근처 타워에 연결
                 if (!targetTower.isGetBuff) {
-                  if (targetTower.x === res.buffTarget.positionX && targetTower.y === res.buffTarget.positionY) {
-                    targetTower.buffStatus(res.buffValue, res.color, true, res.buffTarget.buffTowerPos);
+                  if (
+                    targetTower.x === res.buffTarget.positionX &&
+                    targetTower.y === res.buffTarget.positionY
+                  ) {
+                    targetTower.buffStatus(
+                      res.buffValue,
+                      res.color,
+                      true,
+                      res.buffTarget.buffTowerPos,
+                    );
                     tempTarget = targetTower;
                   }
                 }
@@ -149,7 +184,7 @@ function placeNewTower(type, color) {
       }
     });
   } else {
-    alert('설치할 위치 먼저 선택하세요!!');
+    alert("설치할 위치 먼저 선택하세요!!");
   }
 }
 function placeInitialTowers(res) {
@@ -162,7 +197,16 @@ function placeInitialTowers(res) {
   } else if (towerNum === 1001) {
     towerImage = redPawnImages[0];
   }
-  const tower = new Tower(x, y, towerImage, towerNum, type, data.attack, data.attack_speed, data.range);
+  const tower = new Tower(
+    x,
+    y,
+    towerImage,
+    towerNum,
+    type,
+    data.attack,
+    data.attack_speed,
+    data.range,
+  );
   towers.push(tower);
   tower.draw(ctx);
 }
@@ -176,13 +220,13 @@ function spawnMonster(currentWave) {
     monsterId = waveTable[currentWave - 1].boss_id;
   }
   // [1] 서버에 메세지 보냄
-  sendMonster(31, {
+  sendSpawn(31, {
     timestamp: Date.now(),
     waveId: waveTable[currentWave - 1].id,
     monsterId,
     monsterIndex,
   }).then((res) => {
-    if (res.status === 'success') {
+    if (res.status === "success") {
       // [2] 몬스터생성
       if (res.isBoss) {
         monsters.push(
@@ -236,6 +280,10 @@ export async function gameLoop() {
     spawnMonster(wave.wave);
     monsterSpawnInterval = 200;
   }
+  if (selectedSpot) {
+    const { curX: x, curY: y } = selectedSpot;
+    ctx.drawImage(highlightImage, x, y, 100, 100);
+  }
   // [3] 타워 그리기와 몬스터 공격 판정 체크
   towers.forEach((tower, towerIndex) => {
     tower.draw(ctx);
@@ -244,10 +292,16 @@ export async function gameLoop() {
     // 타워별로 몬스터들과 거리 계산해 범위 안에 오면 공격
     monsters.forEach((monster) => {
       if (monster.currentHp > 0) {
-        const distance = Math.sqrt(Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2));
+        const distance = Math.sqrt(
+          Math.pow(tower.x - monster.x, 2) + Math.pow(tower.y - monster.y, 2),
+        );
         if (distance < tower.range) {
-          if (tower.beamDuration <= 0 && tower.id !== 2001 && tower.id !== 2004) {
-            sendEvent(44, {
+          if (
+            tower.beamDuration <= 0 &&
+            tower.id !== 2001 &&
+            tower.id !== 2004
+          ) {
+            sendAttack(44, {
               towerType: tower.type,
               towerId: tower.id,
               towerPositionX: tower.x,
@@ -259,9 +313,9 @@ export async function gameLoop() {
               timestamp: Date.now(),
               monsterIndex: monster.index,
             }).then((res) => {
-              if (res.status === 'success') {
+              if (res.status === "success") {
                 tower.attack(monster);
-              } else if (res.status === 'fail') {
+              } else if (res.status === "fail") {
                 alert(`공격 처리 실패!! ${res.message}`);
               }
             });
@@ -291,7 +345,7 @@ export async function gameLoop() {
           monsterY: monster.y,
           timestamp: Date.now(),
         }).then((res) => {
-          if (res.status === 'success') {
+          if (res.status === "success") {
             isDestroyed = monster.collideWith(HQ);
             monsters.splice(i, 1); // 닿은 몬스터 제거
             wave.targetKillCount -= 1;
@@ -307,7 +361,7 @@ export async function gameLoop() {
       // [5-1 B] 몬스터가 죽었다면 배열에서 제거
       // [B-1] 서버에 메세지 보냄
       monster.isEventProcessing = true;
-      sendMonster(32, {
+      sendKill(32, {
         timestamp: Date.now(),
         monsterId: monster.id,
         monsterIndex: monster.index,
@@ -315,7 +369,7 @@ export async function gameLoop() {
         monsterGold: monster.gold,
         monsterScore: monster.score,
       }).then((res) => {
-        if (res.status === 'success') {
+        if (res.status === "success") {
           const { monsterGold: goldReward, monsterScore: scoreReward } = res;
           // [B-2] 응답받은 보상 클라에 적용
           userGold += goldReward;
@@ -330,40 +384,50 @@ export async function gameLoop() {
       });
     }
   }
-  // [7] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
-  if (isDestroyed) {
+  // [7] HQ 체력이 0 이하가 되면 게임 오버
+  if (isDestroyed && !isGameEnded) {
+    isGameEnded = true; // 게임 종료 상태 설정
     sendEvent(12, {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status: 'gameOver',
-    }).then((res) => {
-      alert(`Game Over!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
+      status: "gameOver",
+    })
+      .then((res) => {
+        alert(`Game Over!! ${res.message}`);
+        window.location.href = "index.html"; // 결과 페이지로 이동
+      })
+      .catch((err) => {
+        console.error("게임 오버 처리 중 오류:", err);
+      });
   }
-  if (wave.isClear) {
+
+  // [8] 웨이브 클리어 시
+  if (wave.isClear && !isGameEnded) {
+    isGameEnded = true; // 게임 종료 상태 설정
     sendEvent(12, {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
-      status: 'clear',
-    }).then((res) => {
-      alert(`Game Clear!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
+      status: "clear",
+    })
+      .then((res) => {
+        alert(`Game Clear!! ${res.message}`);
+        window.location.href = "index.html"; // 결과 페이지로 이동
+      })
+      .catch((err) => {
+        console.error("게임 클리어 처리 중 오류:", err);
+      });
   }
   // [7] (수정 예정) 상태 정보 표시
-  ctx.font = '25px Times New Roman';
-  ctx.fillStyle = 'skyblue';
+  ctx.font = "25px Times New Roman";
+  ctx.fillStyle = "black";
   ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = "white";
   ctx.fillText(`점수: ${score}`, 100, 100); // 현재 스코어 표시
-  ctx.fillStyle = 'yellow';
+  ctx.fillStyle = "yellow";
   ctx.fillText(`골드: ${userGold}`, 100, 150); // 골드 표시
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = "black";
   ctx.fillText(`현재 웨이브: ${wave.wave}`, 100, 200);
 
   // [8] 프레임 재귀 실행
@@ -382,6 +446,7 @@ async function initGame() {
     monsters = [];
     towers = [];
     score = 0;
+    highScore = res.highScore;
     monsterIndex = 0;
     monsterPath = generatePath(); // 몬스터 경로 준비
     placeHQ(); // 기지 배치
@@ -400,70 +465,67 @@ let userId = null;
 export let monsterTable = null;
 export let waveTable = null;
 export let sendEvent = null;
-export let sendMonster = null;
+export let sendSpawn = null;
+export let sendKill = null;
+export let sendTower = null;
+export let sendAttack = null;
 // [1] 이미지 로드 작업
 Promise.all([
   new Promise((resolve) => (backgroundImage.onload = resolve)),
+  new Promise((resolve) => (highlightImage.onload = resolve)),
   new Promise((resolve) => (baseImage.onload = resolve)),
   new Promise((resolve) => (pathImage.onload = resolve)),
-  ...blackPawnImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
-  ...redPawnImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
-  ...specialImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
-  ...monsterImages.map((img) => new Promise((resolve) => (img.onload = resolve))),
+  ...blackPawnImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
+  ...redPawnImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
+  ...specialImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
+  ...monsterImages.map(
+    (img) => new Promise((resolve) => (img.onload = resolve)),
+  ),
 ]).then(() => {
   // [2] 서버와 상호작용 시작
   // [2-1] localStorage에서 JWT 토큰 가져오기
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   if (!token) {
-    alert('로그인이 필요합니다!');
-    window.location.href = 'login.html'; // 로그인 페이지로 리다이렉트
+    alert("로그인이 필요합니다!");
+    window.location.href = "login.html"; // 로그인 페이지로 리다이렉트
     return;
   }
   // [2-2] 소켓 생성 후 서버와 handshake
-  serverSocket = io('http://localhost:3000', {
+  serverSocket = io("http://localhost:3000", {
     auth: { token }, // JWT 토큰 전송
   });
   // [2-3 A] 소켓 연결 확인 응답
-  serverSocket.on('connect', () => {
-    console.log('서버와 소켓 연결 성공');
+  serverSocket.on("connect", () => {
+    console.log("서버와 소켓 연결 성공");
   });
 
-  // 서버로 "event" 메세지 보내기
-  sendEvent = (handlerId, payload) => {
-    return new Promise((resolve, reject) => {
-      serverSocket.emit('event', {
-        clientVersion: '1.0.0',
-        userId,
-        handlerId,
-        payload,
-      });
-      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once('response', (data) => {
-        if (data.handlerId === handlerId) {
-          resolve(data);
-        } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
-        }
-      });
-    });
-  };
+  // 서버에서 "response" 메세지를 받았을 때
+  serverSocket.on("response", (data) => {
+    console.log("response : ", data);
+  });
 
   // [2-3 B] 소켓 연결 오류 응답
-  serverSocket.on('connect_error', (err) => {
-    if (err.message === 'Authentication error') {
-      alert('인증에 실패했습니다. 다시 로그인해주세요.');
-      localStorage.removeItem('accessToken');
-      window.location.href = 'login.html';
+  serverSocket.on("connect_error", (err) => {
+    if (err.message === "Authentication error") {
+      alert("인증에 실패했습니다. 다시 로그인해주세요.");
+      localStorage.removeItem("accessToken");
+      window.location.href = "login.html";
     } else {
-      console.error('소켓 연결 실패:', err.message);
-      alert('서버와의 연결에 실패했습니다.');
+      console.error("소켓 연결 실패:", err.message);
+      alert("서버와의 연결에 실패했습니다.");
     }
   });
 
   // 서버에서 "connection" 메세지를 받은 후에 게임 시작
   new Promise((resolve) => {
-    serverSocket.on('connection', (data) => {
-      console.log('connection: ', data);
+    serverSocket.on("connection", (data) => {
+      console.log("connection: ", data);
       userId = data.userId;
       monsterTable = data.assets.monsters.data;
       waveTable = data.assets.waves.data;
@@ -475,47 +537,126 @@ Promise.all([
     }
   });
 
-  // 서버에서 "eventResponse" 메세지를 받았을 때
-  serverSocket.on('eventResponse', (data) => {
-    console.log('eventResponse : ', data);
-  });
-
   // 서버로 "event" 메세지 보내기
   sendEvent = (handlerId, payload) => {
     return new Promise((resolve, reject) => {
-      serverSocket.emit('event', {
-        clientVersion: '1.0.0',
+      serverSocket.emit("event", {
+        clientVersion: "1.0.0",
         userId,
         handlerId,
         payload,
       });
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once('eventResponse', (data) => {
+      serverSocket.once("eventResponse", (data) => {
         if (data.handlerId === handlerId) {
+          console.log("event : ", data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
   };
 
-  // 서버로 "monster" 메세지 보내기
-  sendMonster = (handlerId, payload) => {
+  // 서버로 "spawn" 메세지 보내기
+  sendSpawn = (handlerId, payload) => {
     return new Promise((resolve, reject) => {
-      serverSocket.emit('monster', {
-        clientVersion: '1.0.0',
+      serverSocket.emit("spawn", {
+        clientVersion: "1.0.0",
         userId,
         handlerId,
         payload,
       });
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once('monsterResponse', (data) => {
+      serverSocket.once("spawnResponse", (data) => {
         if (data.handlerId === handlerId) {
-          console.log('monsterResponse', data);
+          console.log("spawn : ", data);
           resolve(data);
         } else {
-          reject(new Error('핸들러 아이디가 일치하지 않습니더!!'));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
+        }
+      });
+    });
+  };
+
+  // 서버로 "kill" 메세지 보내기
+  sendKill = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("kill", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("killResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          console.log("kill : ", data);
+          resolve(data);
+        } else {
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
+        }
+      });
+    });
+  };
+
+  // 서버로 "tower" 메세지 보내기
+  sendTower = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("tower", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("towerResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          console.log("tower : ", data);
+          resolve(data);
+        } else {
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
+        }
+      });
+    });
+  };
+
+  // 서버로 "attack" 메세지 보내기
+  sendAttack = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("attack", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("attackResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          if (data.status === "fail") console.log("attack : ", data);
+          resolve(data);
+        } else {
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -524,51 +665,51 @@ Promise.all([
 
 /* 구매 및 뽑기를 위한 버튼 생성 */
 function createButton(text, top) {
-  const btn = document.createElement('button');
+  const btn = document.createElement("button");
   btn.textContent = text;
-  btn.style.position = 'absolute';
+  btn.style.position = "absolute";
   btn.style.top = `${top}px`;
-  btn.style.right = '10px';
-  btn.style.padding = '10px 20px';
-  btn.style.fontSize = '16px';
-  btn.style.cursor = 'pointer';
+  btn.style.right = "10px";
+  btn.style.padding = "10px 20px";
+  btn.style.fontSize = "16px";
+  btn.style.cursor = "pointer";
   return btn;
 }
 // [1] 검정 병사 구입 버튼
-const buyBlackButton = createButton('검정 병사 구입', 10);
+const buyBlackButton = createButton("검정 병사 구입", 10);
 document.body.appendChild(buyBlackButton);
-buyBlackButton.addEventListener('click', () => {
-  placeNewTower('pawn', 'black');
+buyBlackButton.addEventListener("click", () => {
+  placeNewTower("pawn", "black");
 });
 // [2] 빨강 병사 구입 버튼
-const buyRedButton = createButton('빨강 병사 구입', 50);
+const buyRedButton = createButton("빨강 병사 구입", 50);
 document.body.appendChild(buyRedButton);
-buyRedButton.addEventListener('click', () => {
-  placeNewTower('pawn', 'red');
+buyRedButton.addEventListener("click", () => {
+  placeNewTower("pawn", "red");
 });
 // [3] 특수 병사 뽑기 버튼
-const getSpecialButton = createButton('특수 병사 뽑기', 90);
+const getSpecialButton = createButton("특수 병사 뽑기", 90);
 document.body.appendChild(getSpecialButton);
-getSpecialButton.addEventListener('click', () => {
-  placeNewTower('special');
+getSpecialButton.addEventListener("click", () => {
+  placeNewTower("special");
 });
 
 /* 타워 정보 창 생성 */
-const towerInfoPanel = document.createElement('div');
-towerInfoPanel.id = 'towerInfoPanel';
-towerInfoPanel.style.position = 'absolute';
-towerInfoPanel.style.right = '10px';
-towerInfoPanel.style.top = '120px';
-towerInfoPanel.style.padding = '10px';
-towerInfoPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-towerInfoPanel.style.color = 'white';
-towerInfoPanel.style.display = 'none'; // 숨겨놓기
+const towerInfoPanel = document.createElement("div");
+towerInfoPanel.id = "towerInfoPanel";
+towerInfoPanel.style.position = "absolute";
+towerInfoPanel.style.right = "10px";
+towerInfoPanel.style.top = "150px";
+towerInfoPanel.style.padding = "10px";
+towerInfoPanel.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+towerInfoPanel.style.color = "white";
+towerInfoPanel.style.display = "none"; // 숨겨놓기
 document.body.appendChild(towerInfoPanel);
 
 /* 타워 정보 창 열람 */
 function showTowerInfo(tower) {
-  const towerInfo = document.getElementById('towerInfoPanel');
-  towerInfo.style.display = 'block'; // 보여주기
+  const towerInfo = document.getElementById("towerInfoPanel");
+  towerInfo.style.display = "block"; // 보여주기
   towerInfo.innerHTML = `
     <p>타워 위치: (${tower.x}, ${tower.y})</p>
     <p>타워 공격력: ${tower.attackPower}</p>
@@ -578,44 +719,57 @@ function showTowerInfo(tower) {
     <button id="upgradeTowerButton">승급</button>
   `;
   // 판매 버튼 누르면 판매
-  document.getElementById('sellTowerButton').addEventListener('click', () => {
+  document.getElementById("sellTowerButton").addEventListener("click", () => {
     sellTower(tower);
-    towerInfo.style.display = 'none';
+    towerInfo.style.display = "none";
   });
   // 승급 버튼 누르면 승급
-  document.getElementById('upgradeTowerButton').addEventListener('click', () => {
-    upgradeTower(tower);
-  });
+  document
+    .getElementById("upgradeTowerButton")
+    .addEventListener("click", () => {
+      upgradeTower(tower);
+    });
 }
 
 /* 타워 정보 창 숨기기 */
 function hideTowerInfo() {
-  towerInfoPanel.style.display = 'none';
+  towerInfoPanel.style.display = "none";
 }
 
 /* 타워 판매 */
 function sellTower(tower) {
   // [1] 서버에 메세지 보냄
   if (!tower.isGetBuff) {
-    sendEvent(42, {
+    sendTower(42, {
       type: tower.type,
       towerId: tower.id,
       positionX: tower.x,
       positionY: tower.y,
       timestamp: Date.now(),
     }).then((res) => {
-      if (res.status === 'success') {
+      if (res.status === "success") {
         // 버프 타워 삭제인 경우
         if ((tower.id === 2001 || tower.id === 2004) && tower.buffTarget) {
           towers.forEach((targetTower) => {
-            if (targetTower.id === tower.buffTarget.data.id && targetTower.x === tower.buffTarget.positionX && targetTower.y === tower.buffTarget.positionY) {
-              targetTower.buffStatus(res.buffValue, tower.id === 2001 ? 'red' : 'black', false);
+            if (
+              targetTower.id === tower.buffTarget.data.id &&
+              targetTower.x === tower.buffTarget.positionX &&
+              targetTower.y === tower.buffTarget.positionY
+            ) {
+              targetTower.buffStatus(
+                res.buffValue,
+                tower.id === 2001 ? "red" : "black",
+                false,
+              );
             }
           });
         } else if (tower.isGetBuff) {
-          const buffTowerPosition = tower.buffTowerPos.split(',');
+          const buffTowerPosition = tower.buffTowerPos.split(",");
           towers.forEach((targetTower) => {
-            if (targetTower.x === Number(buffTowerPosition[0]) && targetTower.y === Number(buffTowerPosition[1])) {
+            if (
+              targetTower.x === Number(buffTowerPosition[0]) &&
+              targetTower.y === Number(buffTowerPosition[1])
+            ) {
               targetTower.updateBuffTowers(null, null);
             }
           });
@@ -632,26 +786,26 @@ function sellTower(tower) {
       hideTowerInfo(); // [4] 정보 패널 다시 숨김
     });
   } else {
-    alert('버프가 적용된 타워는 판매할 수 없습니다.');
+    alert("버프가 적용된 타워는 판매할 수 없습니다.");
   }
 }
 
 /* 타워 승급 */
 function upgradeTower(tower) {
   const currentImageNum = tower.image.src.at(-5);
-  if (currentImageNum === '9') {
-    alert('이미 최대로 승급된 병사입니다!!');
+  if (currentImageNum === "9") {
+    alert("이미 최대로 승급된 병사입니다!!");
     return;
   }
   // [1] 서버에 메세지 보냄
-  sendEvent(43, {
+  sendTower(43, {
     type: tower.type,
     towerId: tower.id,
     positionX: tower.x,
     positionY: tower.y,
     timestamp: Date.now(),
   }).then((res) => {
-    if (res.status === 'success') {
+    if (res.status === "success") {
       const { cost, data, type } = res;
       if (userGold >= cost) {
         userGold -= cost; // [2] 승급 비용 차감
@@ -660,9 +814,9 @@ function upgradeTower(tower) {
         tower.attackSpeed = data.attack_speed;
         tower.range = data.range;
         // [4] 타워 이미지 변경
-        if (type === 'pawn' && data.color === 'black') {
+        if (type === "pawn" && data.color === "black") {
           tower.image = blackPawnImages[+currentImageNum + 1];
-        } else if (type === 'pawn' && data.color === 'red') {
+        } else if (type === "pawn" && data.color === "red") {
           tower.image = redPawnImages[+currentImageNum + 1];
         }
         showTowerInfo(tower); // [5] 승급 후 갱신된 정보 표시
@@ -681,14 +835,18 @@ function isPositionValid(x, y) {
   const pathRadius = 20; // 주변 경로 탐색 반경
   // [1] 다른 타워와의 충돌 확인
   for (const tower of towers) {
-    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
+    const distance = Math.sqrt(
+      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
+    );
     if (distance < towerRadius) {
       return false; // 다른 타워와 겹침
     }
   }
   // [2] 경로와의 충돌 확인
   for (const point of monsterPath) {
-    const distance = Math.sqrt(Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2));
+    const distance = Math.sqrt(
+      Math.pow(point.x - curX, 2) + Math.pow(point.y - curY, 2),
+    );
     if (distance < pathRadius) {
       return false; // 경로와 겹침
     }
@@ -699,7 +857,7 @@ function isPositionValid(x, y) {
 /* 화면 클릭 상호작용 - 타워 설치 및 선택 등등 */
 let selectedTower = null; // 현재 선택된 타워
 let selectedSpot = null; // 현재 선택된 위치
-canvas.addEventListener('click', (event) => {
+canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
   // [1] 클릭 위치 캔버스 내 좌표로 조정
   const x = event.clientX - rect.left;
@@ -709,8 +867,11 @@ canvas.addEventListener('click', (event) => {
   const curY = Math.floor(y / 100) * 100;
   // [3] 선택된 위치에 타워가 있는지 판단
   for (const tower of towers) {
-    const distance = Math.sqrt(Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2));
+    const distance = Math.sqrt(
+      Math.pow(tower.x - curX, 2) + Math.pow(tower.y - curY, 2),
+    );
     if (distance < 30) {
+      selectedSpot = { curX, curY };
       selectedTower = tower;
       showTowerInfo(tower); // 선택된 타워 정보 표시
       return;
