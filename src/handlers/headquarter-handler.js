@@ -33,7 +33,7 @@ export const collideHandler = (userId, payload) => {
     createTime,
   );
   // [6] 충돌이 유효하다면 충돌 결과 연산
-  const tolerance = 10; // 허용 오차 범위 설정
+  const tolerance = 2000; // 허용 오차 범위 설정
   if (Math.abs(monsterX - severMonsterX) <= tolerance) {
     // [6-1] 몬스터의 공격력 추출
     const monster = monsters.data.find((monster) => monster.id === monsterId);
