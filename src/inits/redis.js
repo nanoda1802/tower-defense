@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-
+// Redis 연결
 const redisClient = createClient({
   url: 'redis://:qwer1234@218.237.144.112:6379',
 });

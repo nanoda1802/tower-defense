@@ -34,6 +34,7 @@ let highScore = 0;
 let wave = 0;
 let isDestroyed = false;
 let isInitGame = false;
+let isGameEnded = false; // 게임 종료 여부 플래그
 
 /* 경로 준비 (배열에 저장) */
 function generatePath() {
@@ -219,7 +220,7 @@ function spawnMonster(currentWave) {
     monsterId = waveTable[currentWave - 1].boss_id;
   }
   // [1] 서버에 메세지 보냄
-  sendMonster(31, {
+  sendSpawn(31, {
     timestamp: Date.now(),
     waveId: waveTable[currentWave - 1].id,
     monsterId,
@@ -360,7 +361,7 @@ export async function gameLoop() {
       // [5-1 B] 몬스터가 죽었다면 배열에서 제거
       // [B-1] 서버에 메세지 보냄
       monster.isEventProcessing = true;
-      sendMonster(32, {
+      sendKill(32, {
         timestamp: Date.now(),
         monsterId: monster.id,
         monsterIndex: monster.index,
@@ -383,34 +384,44 @@ export async function gameLoop() {
       });
     }
   }
-  // [7] HQ 체력이 0 이하가 되면 게임 오버, alert 띄우고 새로고침해 index.html로 이동
-  if (isDestroyed) {
+  // [7] HQ 체력이 0 이하가 되면 게임 오버
+  if (isDestroyed && !isGameEnded) {
+    isGameEnded = true; // 게임 종료 상태 설정
     sendEvent(12, {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
       status: "gameOver",
-    }).then((res) => {
-      alert(`Game Over!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
+    })
+      .then((res) => {
+        alert(`Game Over!! ${res.message}`);
+        window.location.href = "index.html"; // 결과 페이지로 이동
+      })
+      .catch((err) => {
+        console.error("게임 오버 처리 중 오류:", err);
+      });
   }
-  if (wave.isClear) {
+
+  // [8] 웨이브 클리어 시
+  if (wave.isClear && !isGameEnded) {
+    isGameEnded = true; // 게임 종료 상태 설정
     sendEvent(12, {
       timestamp: Date.now(),
       score,
       leftGold: userGold,
       status: "clear",
-    }).then((res) => {
-      alert(`Game Clear!! ${res.message}`);
-      location.reload(); // 새로고침
-      return; // 루프 종료
-    });
+    })
+      .then((res) => {
+        alert(`Game Clear!! ${res.message}`);
+        window.location.href = "index.html"; // 결과 페이지로 이동
+      })
+      .catch((err) => {
+        console.error("게임 클리어 처리 중 오류:", err);
+      });
   }
   // [7] (수정 예정) 상태 정보 표시
   ctx.font = "25px Times New Roman";
-  ctx.fillStyle = "skyblue";
+  ctx.fillStyle = "black";
   ctx.fillText(`최고 기록: ${highScore}`, 100, 50); // 최고 기록 표시
   ctx.fillStyle = "white";
   ctx.fillText(`점수: ${score}`, 100, 100); // 현재 스코어 표시
@@ -435,6 +446,7 @@ async function initGame() {
     monsters = [];
     towers = [];
     score = 0;
+    highScore = res.highScore;
     monsterIndex = 0;
     monsterPath = generatePath(); // 몬스터 경로 준비
     placeHQ(); // 기지 배치
@@ -453,7 +465,8 @@ let userId = null;
 export let monsterTable = null;
 export let waveTable = null;
 export let sendEvent = null;
-export let sendMonster = null;
+export let sendSpawn = null;
+export let sendKill = null;
 export let sendTower = null;
 export let sendAttack = null;
 // [1] 이미지 로드 작업
@@ -539,28 +552,61 @@ Promise.all([
           console.log("event : ", data);
           resolve(data);
         } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
   };
 
-  // 서버로 "monster" 메세지 보내기
-  sendMonster = (handlerId, payload) => {
+  // 서버로 "spawn" 메세지 보내기
+  sendSpawn = (handlerId, payload) => {
     return new Promise((resolve, reject) => {
-      serverSocket.emit("monster", {
+      serverSocket.emit("spawn", {
         clientVersion: "1.0.0",
         userId,
         handlerId,
         payload,
       });
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
-      serverSocket.once("monsterResponse", (data) => {
+      serverSocket.once("spawnResponse", (data) => {
         if (data.handlerId === handlerId) {
-          console.log("monster : ", data);
+          console.log("spawn : ", data);
           resolve(data);
         } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
+        }
+      });
+    });
+  };
+
+  // 서버로 "kill" 메세지 보내기
+  sendKill = (handlerId, payload) => {
+    return new Promise((resolve, reject) => {
+      serverSocket.emit("kill", {
+        clientVersion: "1.0.0",
+        userId,
+        handlerId,
+        payload,
+      });
+      // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
+      serverSocket.once("killResponse", (data) => {
+        if (data.handlerId === handlerId) {
+          console.log("kill : ", data);
+          resolve(data);
+        } else {
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -581,7 +627,11 @@ Promise.all([
           console.log("tower : ", data);
           resolve(data);
         } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
@@ -599,10 +649,14 @@ Promise.all([
       // 해당 메세지에 대한 응답 바로 받는 일회성 이벤트리스너
       serverSocket.once("attackResponse", (data) => {
         if (data.handlerId === handlerId) {
-          console.log("attack : ", data);
+          if (data.status === "fail") console.log("attack : ", data);
           resolve(data);
         } else {
-          reject(new Error("핸들러 아이디가 일치하지 않습니더!!"));
+          reject(
+            new Error(
+              `보낸 핸들러 ${handlerId}와 받은 핸들러 ${data.handlerId}가 일치하지 않습니더!!`,
+            ),
+          );
         }
       });
     });
