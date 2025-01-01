@@ -1,4 +1,4 @@
-import { createRoom, addUserToRoom, getRoomState, updateGameState } from '../models/room-model.js';
+import { createRoom, addUserToRoom, getRoomState, updateGameState } from '../models/temp-room-model.js';
 import redisClient from '../inits/redis.js'; // Redis 클라이언트
 
 // Room에 사용자 추가 및 입장 처리

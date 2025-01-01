@@ -13,6 +13,7 @@ export class Room {
     this.key = key;
     this.userId = userId; // [userId01, userId02,...]가 목표지만 일단 싱글 기준
   }
+
   /* HQ 관련 메서드 */
   getHq() {
     return this.hq;
@@ -80,7 +81,6 @@ export class Room {
       this.aliveMonsters.splice(targetIndex, 1);
     }
   }
-
   getDeathMonsters() {
     return this.deathMonsters;
   }

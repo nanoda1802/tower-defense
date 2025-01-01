@@ -13,7 +13,7 @@ import {
   slowTowerHandler,
 } from "./tower-handler.js";
 import { waveChangeHandler } from "./wave-handler.js";
-import { handleRoomJoin, handleGameStateUpdate } from "./room-handler.js";
+import { handleRoomJoin, handleGameStateUpdate } from "./temp-room-handler.js";
 
 const eventHandlerMappings = {
   11: gameStart, // 해써

@@ -41,7 +41,9 @@ class WaveModel {
     if (!wave || wave.currentWaveIndex >= this.maxWaves) return null;
 
     // wave.json의 데이터를 사용하여 현재 웨이브의 정보를 가져옴
-    const waveData = this.assets.wave.data.find((w) => w.id === 11 + wave.currentWaveIndex);
+    const waveData = this.assets.wave.data.find(
+      (w) => w.id === 11 + wave.currentWaveIndex,
+    );
 
     return {
       wave_number: wave.currentWaveIndex + 1,
@@ -58,7 +60,9 @@ class WaveModel {
 
     // 웨이브 번호에 맞는 몬스터 데이터 템플릿 제공
     const monsterId = 100 + (wave.currentWaveIndex + 1);
-    const monsterTemplate = this.assets.monster.data.find((monster) => monster.id === monsterId && monster.type === "monster");
+    const monsterTemplate = this.assets.monster.data.find(
+      (monster) => monster.id === monsterId && monster.type === "monster",
+    );
 
     console.log("Monster Template Data:", monsterTemplate); // 디버깅용
     return monsterTemplate;
@@ -73,7 +77,9 @@ class WaveModel {
 
     // 웨이브 번호에 맞는 보스 데이터 템플릿 제공
     const bossId = 200 + (wave.currentWaveIndex + 1);
-    const bossTemplate = this.assets.monster.data.find((monster) => monster.id === bossId && monster.type === "boss");
+    const bossTemplate = this.assets.monster.data.find(
+      (monster) => monster.id === bossId && monster.type === "boss",
+    );
 
     console.log("Boss Template Data:", bossTemplate); // 디버깅용
     return bossTemplate;
@@ -141,7 +147,8 @@ class WaveModel {
   // - 상태를 WAITING으로 초기화
   progressToNextWave(userId) {
     const wave = this.waves.get(userId);
-    if (!wave || wave.state !== WaveState.COMPLETE || !wave.bossKilled) return false;
+    if (!wave || wave.state !== WaveState.COMPLETE || !wave.bossKilled)
+      return false;
 
     const nextWaveExists = wave.currentWaveIndex < this.maxWaves - 1;
     if (nextWaveExists) {

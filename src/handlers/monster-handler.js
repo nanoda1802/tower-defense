@@ -10,7 +10,7 @@ export const createMonsterHandler = (userId, payload) => {
     });
     // [2] 필요한 assets 데이터 가져오기 및 payload 데이터 추출
     let isBoss = false;
-    const { monsters, waves } = getGameAssets(); // assets파일의 monsters, bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
+    const { monsters, waves } = getGameAssets(); // assets파일의 monsters, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
     const { timestamp: createTime, waveId, monsterId, monsterIndex } = payload; //socket으로 받을 payload정보 리스트
     // [3] 생성된 몬스터의 정보 조회
     const monster = monsters.data.find((monster) => monster.id === monsterId);
@@ -156,58 +156,3 @@ export const deathMonsterHandler = (userId, payload) => {
     throw new Error("몬스터 처치 실패!! " + error.message);
   }
 };
-
-/* CreateBossHandler 32 */
-// export const createBossHandler = (userId, payload) => {
-//   try {
-//     const { bosses, waves } = getGameAssets(); //assets파일의 bosses, waves 정보 불러오기 (클라이언트에서 가져온 데이터랑 비교할거임)
-//     const { timestamp, waveId, bossId } = payload; //socket으로 받을 payload정보 리스트
-//     //timestamp는 소환시간 검증, bossId는 보스 정보 검증
-
-//     //보스 정보 조회
-//     const boss = bosses.data.find((boss) => boss.id === bossId);
-//     if (!boss) {
-//       return { status: "fail", message: "Invalid boss ID" };
-//     }
-
-//     //보스 출현 스테이지 검증
-//     const bossWave = waves.data.find((wave) => wave.id === waveId);
-//     if (bossWave.boss_id !== bossId) {
-//       //waveId를 검증한 후 해당 bossId와 payload의 bossId 검증
-//       return { status: "fail", message: "Invalid boss ID" };
-//     }
-
-//     //보스 소환 시간 검증
-
-//     //보스 정보 저장
-//     const bossHealth = boss.health;
-//     const bossAttack = boss.attack;
-//     const bossSpeed = boss.speed;
-//     const bossGold = boss.gold;
-//     const bossScore = boss.score;
-//     setAliveBosses(
-//       userId,
-//       timestamp,
-//       bossId,
-//       bossHealth,
-//       bossAttack,
-//       bossSpeed,
-//       bossGold,
-//       bossScore,
-//     );
-//   } catch (error) {
-//     throw new Error("Failed to create boss !! " + error.message);
-//   }
-// };
-
-/* deathBossHandler 34 */
-// export const deathBossHandler = (userId, payload) => {
-//   const { bosses } = getGameAssets(); //assets파일의 monsters 정보 불러오기
-//   const { timestamp, bossId, x, y } = payload; //payloal 정보
-//   //보스 ID, 이동한 좌표(이동 전도 가져와도됨)
-
-//   //여기서 보스 ...
-//   //const
-// };
-
-//클라이언트에서 몬스터가 이동한 코드대로 서버에서도 이동시키기 => 몬스터 움직임 하나하나를 검증할 필요없음

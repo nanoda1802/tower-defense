@@ -318,7 +318,7 @@ export const attackTowerHandler = (userId, payload) => {
       };
     }
     // [8] 몬스터 이동에 조작이 있진 않은 지 검증하기 위한 서버 시뮬레이션 데이터 가져오기
-    const tolerance = 200;
+    const tolerance = 500;
     const calculateX = calculateMonsterMove(
       monsterId,
       monsterIndex,
