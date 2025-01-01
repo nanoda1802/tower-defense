@@ -196,13 +196,3 @@ export const gameEnd = async (userId, payload) => {
     throw new Error("스코어 보드 업데이트 중 오류가 발생했습니다.");
   }
 };
-
-/* Game Save 13 */
-export const gameSave = (userId, payload) => {
-  //게임저장
-  //현재 게임 상태를 저장하는 함수
-};
-/* Game Load 14 */
-export const gameLoad = (userId, payload) => {
-  //게임 불러오기
-};
