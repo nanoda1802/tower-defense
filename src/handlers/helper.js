@@ -1,5 +1,5 @@
 import { CLIENT_VERSION } from "../constants.js";
-import { createWave } from "../models/wave-model.js";
+import { rooms, Room } from "../room/room.js";
 import { getUser, removeUser } from "../models/user-model.js";
 import {
   eventHandlerMappings,
@@ -8,10 +8,6 @@ import {
   attackHandlerMappings,
 } from "./handler-mapping.js";
 import { getGameAssets } from "../inits/assets.js";
-import { createAliveMonsters } from "../models/monster-model.js";
-import { createTower, clearRemoveTower } from "../models/tower-model.js";
-import { createGold, setGold } from "../models/gold-model.js";
-import { createScore } from "../models/score-model.js";
 
 /* 연결 해제 관리 */
 export const handleDisconnect = (socket) => {
@@ -24,16 +20,13 @@ export const handleDisconnect = (socket) => {
 export const handleConnection = async (socket, userId) => {
   console.log(`User connected!: ${userId} with socket ID ${socket.id}`);
   console.log("Current users : ", getUser());
-  createAliveMonsters(userId);
-  //데이터 데이블 전체 조회
+  // [1] Room 인스턴스 생성
+  const newRoomKey = rooms.length + 1;
+  const room = new Room(newRoomKey, userId);
+  rooms.push(room);
+  // [2] assets 데이터 전체 조회
   const assets = getGameAssets();
-  //해당 유저의 웨이브 생성
-  createGold(userId);
-  createScore(userId);
-  createWave(userId);
-  createTower(userId);
-  clearRemoveTower(userId);
-
+  // [3] connection 성공 응답과 함께 assets 데이터 클라이언트에 전달
   socket.emit("connection", { userId, assets });
 };
 /* event 메세지 관리 */
