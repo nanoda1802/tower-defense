@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Changmin Kang" />
+    <title>내일배움캠프 Node.js 트랙 타워 디펜스 게임</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #2d2d2d;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .form-container input {
+        margin: 10px;
+        padding: 10px;
+        font-size: 16px;
+      }
+      .form-container button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <h1>내일배움캠프 Node.js 트랙 타워 디펜스 게임</h1>
+      <h2>회원가입</h2>
+      <input type="text" id="email" placeholder="이메일" />
+      <input type="password" id="password" placeholder="비밀번호" />
+      <input type="password" id="confirmPassword" placeholder="비밀번호 확인" />
+      <button id="register">회원가입</button>
+      <button id="back">뒤로가기</button>
+    </div>
+    <script>
+      document.getElementById('register').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+        // 비어 있는 값 체크
+        if (!email || !password || !confirmPassword) {
+          alert('모든 필드를 입력해주세요.');
+          return;
+        }
+
+        // 비밀번호와 비밀번호 확인 일치 여부 확인
+        if (password !== confirmPassword) {
+          alert('비밀번호가 일치하지 않습니다.');
+          return;
+        }
+
+        try {
+          const response = await fetch('http://localhost:3000/api/account/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            alert(result.message); // 성공 메시지 표시
+            window.location.href = 'index.html'; // index.html로 이동
+          } else {
+            alert(result.message || '회원가입에 실패했습니다.');
+          }
+        } catch (error) {
+          console.error('Error during registration:', error);
+          alert('서버와 통신 중 문제가 발생했습니다.');
+        }
+      });
+
+      document.getElementById('back').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    </script>
+  </body>
+</html>

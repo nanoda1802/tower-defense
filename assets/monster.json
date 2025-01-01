@@ -4,38 +4,93 @@
   "data": [
     {
       "id": 101,
-      "health": 10,
+      "health": 50,
+      "type": "monster",
       "attack": 1,
-      "speed": 10,
-      "gold": 5
+      "speed": 0.2,
+      "gold": 5,
+      "score": 10
     },
     {
       "id": 102,
-      "health": 20,
+      "health": 60,
+      "type": "monster",
       "attack": 2,
-      "speed": 10,
-      "gold": 10
+      "speed": 0.2,
+      "gold": 10,
+      "score": 20
     },
     {
       "id": 103,
-      "health": 30,
+      "health": 70,
+      "type": "monster",
       "attack": 3,
-      "speed": 10,
-      "gold": 15
+      "speed": 0.2,
+      "gold": 15,
+      "score": 30
     },
     {
       "id": 104,
-      "health": 40,
+      "health": 80,
+      "type": "monster",
       "attack": 4,
-      "speed": 10,
-      "gold": 20
+      "speed": 0.2,
+      "gold": 20,
+      "score": 40
     },
     {
       "id": 105,
-      "health": 50,
+      "health": 90,
+      "type": "monster",
       "attack": 5,
-      "speed": 10,
-      "gold": 25
+      "speed": 0.2,
+      "gold": 25,
+      "score": 50
+    },
+    {
+      "id": 201,
+      "health": 200,
+      "type": "boss",
+      "attack": 10,
+      "speed": 0.2,
+      "gold": 50,
+      "score": 100
+    },
+    {
+      "id": 202,
+      "health": 400,
+      "type": "boss",
+      "attack": 20,
+      "speed": 0.2,
+      "gold": 100,
+      "score": 200
+    },
+    {
+      "id": 203,
+      "health": 600,
+      "type": "boss",
+      "attack": 30,
+      "speed": 0.2,
+      "gold": 150,
+      "score": 300
+    },
+    {
+      "id": 204,
+      "health": 800,
+      "type": "boss",
+      "attack": 40,
+      "speed": 0.2,
+      "gold": 200,
+      "score": 400
+    },
+    {
+      "id": 205,
+      "health": 1000,
+      "type": "boss",
+      "attack": 50,
+      "speed": 0.2,
+      "gold": 250,
+      "score": 500
     }
   ]
 }

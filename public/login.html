@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Changmin Kang" />
+    <title>내일배움캠프 Node.js 트랙 타워 디펜스 게임</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #2d2d2d;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .form-container input {
+        margin: 10px;
+        padding: 10px;
+        font-size: 16px;
+      }
+      .form-container button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <h1>내일배움캠프 Node.js 트랙 타워 디펜스 게임</h1>
+      <h2>로그인</h2>
+      <input type="text" id="email" placeholder="이메일" />
+      <input type="password" id="password" placeholder="비밀번호" />
+      <button id="login">로그인</button>
+      <button id="back">뒤로가기</button>
+    </div>
+    <script>
+      document.getElementById('login').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!email || !password) {
+          alert('아이디와 비밀번호를 입력해주세요.');
+          return;
+        }
+
+        try {
+          // 로그인 API 호출
+          const response = await fetch('http://localhost:3000/api/account/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            // 로그인 성공 처리
+            alert(result.message); // 성공 메시지 표시
+
+            // JWT 토큰 저장
+            localStorage.setItem('accessToken', result.token);
+            localStorage.setItem('email', email); // email도 저장
+
+            // index.html로 이동
+            window.location.href = 'index.html';
+          } else if (result.sessionExists) {
+            // 이미 로그인된 세션 처리
+            const confirmLogout = confirm(result.message); // "이미 로그인된 계정입니다."
+            if (confirmLogout) {
+              // 기존 세션 삭제 요청
+              await fetch('http://localhost:3000/api/account/logout', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+              });
+
+              alert('기존 세션이 종료되었습니다. 다시 로그인하세요.');
+              document.getElementById('login').click(); // 재로그인 요청
+            }
+          } else {
+            // 실패 메시지 표시
+            alert(result.message || '로그인에 실패했습니다.');
+          }
+        } catch (error) {
+          console.error('Error during login:', error);
+          alert('서버와 통신 중 문제가 발생했습니다.');
+        }
+      });
+
+      document.getElementById('back').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    </script>
+  </body>
+</html>

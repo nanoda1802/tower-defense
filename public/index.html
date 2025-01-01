@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Changmin Kang" />
+    <title>내일배움캠프 Node.js 트랙 타워 디펜스 게임</title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+  </head>
+  <body>
+    <div class="button-container">
+      <h1 style="color: white">내일배움캠프 Node.js 트랙 타워 디펜스 게임</h1>
+      <div id="auth-buttons"></div>
+      <button id="playButton">게임 플레이</button>
+      <!-- <button id="coopModeButton">협동 모드</button> -->
+    </div>
+    <canvas id="gameCanvas" width="1200" height="700"></canvas>
+    <!-- 스코어보드 -->
+    <div id="scoreboard">
+      <h3>최고 기록 랭킹</h3>
+      <ul id="leaderboard"></ul>
+    </div>
+    <!-- 유저보드 -->
+    <!-- <div id="userBoard">
+      <h3>현재 접속 중인 유저</h3>
+      <ul id="userList"></ul>
+    </div> -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script type="module">
+      // 로그인 상태 확인 및 버튼 렌더링
+      const authButtons = document.getElementById("auth-buttons");
+      const token = localStorage.getItem("accessToken");
+      const email = localStorage.getItem("email");
+
+      // 유저 보드 초기화 함수
+      // const initializeUserBoard = () => {
+      //   const socket = io('http://localhost:3000'); // 서버와 WebSocket 연결
+
+      //   if (email) socket.emit('userConnected', { email }); // 서버에 사용자 정보 전송
+
+      //   socket.emit('getOnlineUsers', {}, (response) => updateUserBoard(response.users)); // 초기 데이터 요청
+
+      //   socket.on('updateUserBoard', updateUserBoard); // 실시간 업데이트
+
+      //   const updateUserBoard = (users) => {
+      //     let userListElement = document.getElementById('userList');
+
+      //     if (!userListElement) {
+      //       userListElement = document.createElement('ul');
+      //       userListElement.id = 'userList';
+
+      //       const userBoardContainer = document.createElement('div');
+      //       userBoardContainer.id = 'userBoard';
+      //       userBoardContainer.style.position = 'absolute';
+      //       userBoardContainer.style.top = '10px';
+      //       userBoardContainer.style.right = '10px';
+      //       userBoardContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
+      //       userBoardContainer.style.color = 'white';
+      //       userBoardContainer.style.padding = '15px';
+      //       userBoardContainer.style.borderRadius = '5px';
+      //       userBoardContainer.style.fontFamily = 'Arial, sans-serif';
+
+      //       const title = document.createElement('h3');
+      //       title.textContent = '현재 접속 중인 유저';
+
+      //       userBoardContainer.appendChild(title);
+      //       userBoardContainer.appendChild(userListElement);
+
+      //       document.body.appendChild(userBoardContainer);
+      //     }
+
+      //     userListElement.innerHTML = ''; // 기존 목록 초기화
+
+      //     Object.entries(users).forEach(([userId, socketId]) => {
+      //       const listItem = document.createElement('li');
+      //       listItem.textContent = `${userId} (${socketId})`;
+      //       userListElement.appendChild(listItem);
+      //     });
+      //   };
+      // };
+
+      if (token && email) {
+        // 로그인 상태인 경우 로그아웃 버튼 표시
+        const logoutButton = document.createElement("button");
+        logoutButton.textContent = "로그아웃";
+        logoutButton.addEventListener("click", async () => {
+          try {
+            const response = await fetch(
+              "http://localhost:3000/api/account/logout",
+              {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`, // 토큰 포함
+                },
+                body: JSON.stringify({ email }),
+                credentials: "include", // 쿠키 포함
+              },
+            );
+
+            if (response.ok) {
+              localStorage.removeItem("accessToken"); // 토큰 삭제
+              localStorage.removeItem("email"); // 이메일 삭제
+              alert("로그아웃 되었습니다.");
+              window.location.reload(); // 페이지 새로고침
+            } else {
+              const result = await response.json();
+              alert(result.message || "로그아웃에 실패했습니다.");
+            }
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("서버와 통신 중 문제가 발생했습니다.");
+          }
+        });
+        authButtons.appendChild(logoutButton);
+        // DOMContentLoaded 이후 유저 보드 초기화
+        // document.addEventListener('DOMContentLoaded', () => {
+        //   // initializeUserBoard(); // 유저 보드 초기화
+        // });
+      } else {
+        // 비로그인 상태인 경우 로그인/회원가입 버튼 표시
+        const loginButton = document.createElement("button");
+        loginButton.textContent = "로그인";
+        loginButton.addEventListener("click", () => {
+          window.location.href = "login.html"; // 로그인 페이지로 이동
+        });
+
+        const registerButton = document.createElement("button");
+        registerButton.textContent = "회원가입";
+        registerButton.addEventListener("click", () => {
+          window.location.href = "register.html"; // 회원가입 페이지로 이동
+        });
+
+        authButtons.appendChild(loginButton);
+        authButtons.appendChild(registerButton);
+      }
+
+      document.getElementById("playButton").addEventListener("click", () => {
+        document.querySelector(".button-container").style.display = "none";
+        document.getElementById("gameCanvas").style.display = "block";
+        import("./src/game.js");
+      });
+
+      // 협동 모드 버튼 이벤트
+      // document
+      //   .getElementById("coopModeButton")
+      //   .addEventListener("click", () => {
+      //     // 버튼 컨테이너 숨기기
+      //     document.querySelector(".button-container").style.display = "none";
+      //     // 게임 캔버스 표시
+      //     document.getElementById("gameCanvas").style.display = "block";
+
+      //     // 협동 모드 초기화 - co-op-game.js 로드
+      //     import("./src/co-op-game.js")
+      //       .then((module) => {
+      //         module.initCoopWebSocket(); // WebSocket 연결 초기화
+      //         setTimeout(() => module.initCoopMode(), 100); // 약간의 지연 후 협동 모드 초기화
+      //       })
+      //       .catch((err) => {
+      //         console.error("협동 모드 로드 실패:", err);
+      //         alert("협동 모드를 로드하는 데 실패했습니다.");
+      //       });
+      //   });
+
+      // 스코어보드 업데이트 함수
+      const fetchLeaderboard = async () => {
+        try {
+          // 랭킹 데이터 요청
+          const response = await fetch("http://localhost:3000/api/ranking"); // ranking-router.js에 구현된 API 호출
+          if (!response.ok)
+            throw new Error("랭킹 데이터를 가져오는 데 실패했습니다.");
+
+          const data = await response.json();
+          updateScoreboard(data.leaderboard); // 스코어보드 업데이트 함수 호출
+
+          console.log("랭킹 데이터 갱신 완료:", data.leaderboard);
+        } catch (err) {
+          console.error("스코어보드 데이터를 가져오는 중 오류 발생:", err);
+        }
+      };
+
+      const updateScoreboard = (leaderboard) => {
+        const leaderboardElement = document.getElementById("leaderboard");
+
+        // 기존 항목 초기화
+        leaderboardElement.innerHTML = "";
+
+        // 새로운 항목 추가
+        leaderboard.forEach(({ rank, email, score }) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = `${rank}. ${email} - ${score}점`;
+          leaderboardElement.appendChild(listItem);
+        });
+      };
+
+      // 페이지 로드 시 스코어보드 데이터 가져오기
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchLeaderboard(); // 새로고침 시 최신 랭킹 데이터를 가져옴
+      });
+    </script>
+  </body>
+</html>
